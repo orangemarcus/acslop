@@ -55,118 +55,117 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-cream-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-cream-300 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Academic Slop Translator
-              </h1>
-              <p className="text-sm text-gray-500">
-                Turn pretentious academic prose into plain English
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-terracotta-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-warm-900">Academic Translator</h1>
+                <p className="text-xs text-warm-600">Dense papers to plain English</p>
+              </div>
             </div>
             {result && (
               <button
                 onClick={handleClear}
-                className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                className="text-sm text-warm-600 hover:text-warm-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-cream-200"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Start Over
+                New translation
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-10">
         {!result ? (
-          /* Input Section */
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="space-y-8">
+            {/* Welcome */}
+            <div className="text-center max-w-lg mx-auto">
+              <h2 className="text-2xl font-serif text-warm-900 mb-2">What would you like to understand?</h2>
+              <p className="text-sm text-warm-600">
+                Paste academic text or upload an image. I&apos;ll translate it so a first-year student can follow along, and check for hallucinated citations.
+              </p>
+            </div>
+
+            {/* Input card */}
+            <div className="bg-white rounded-2xl border border-cream-300 p-6 shadow-soft">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <TextInput onTextChange={setText} disabled={loading} />
                 <ImageUpload onImageSelect={setImage} disabled={loading} />
               </div>
 
-              {/* Error message */}
               {error && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Translate button */}
               <div className="mt-6 flex justify-center">
                 <button
                   onClick={handleTranslate}
                   disabled={loading || (!text && !image)}
-                  className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="px-6 py-2.5 bg-terracotta-500 text-white font-medium rounded-xl hover:bg-terracotta-600 disabled:bg-cream-300 disabled:text-cream-400 disabled:cursor-not-allowed flex items-center gap-2 shadow-soft"
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Translating...
+                      Analyzing...
                     </>
                   ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                      </svg>
-                      Translate to Plain English
-                    </>
+                    'Translate'
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Sample inputs */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-700 mb-4">Try these examples:</h2>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setText("The dialectical interplay between structure and agency manifests in the habituated practices of social actors, whose dispositional tendencies are simultaneously constituted by and constitutive of the field-specific logics that govern symbolic capital accumulation.")}
-                  className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors"
-                  disabled={loading}
-                >
-                  <span className="font-medium text-gray-900">Sociology:</span> &ldquo;The dialectical interplay between structure and agency manifests in the habituated practices of social actors...&rdquo;
-                </button>
-                <button
-                  onClick={() => setText("Leveraging synergistic cross-functional alignments, we can operationalize a paradigm shift toward customer-centric value propositions that drive sustainable competitive advantage through iterative optimization of touchpoint experiences.")}
-                  className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors"
-                  disabled={loading}
-                >
-                  <span className="font-medium text-gray-900">Business:</span> &ldquo;Leveraging synergistic cross-functional alignments, we can operationalize a paradigm shift...&rdquo;
-                </button>
-                <button
-                  onClick={() => setText("The epistemological ramifications of post-structuralist deconstruction necessitate a fundamental reconceptualization of the ontological status of textual meaning, whereby the signifier-signified relationship is revealed as inherently unstable and contingent upon the differance that perpetually defers presence.")}
-                  className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors"
-                  disabled={loading}
-                >
-                  <span className="font-medium text-gray-900">Philosophy:</span> &ldquo;The epistemological ramifications of post-structuralist deconstruction necessitate...&rdquo;
-                </button>
+            {/* Examples */}
+            <div>
+              <h3 className="text-xs font-semibold text-warm-600 uppercase tracking-wider mb-3 px-1">Try an example</h3>
+              <div className="space-y-2.5">
+                {[
+                  {
+                    label: 'Sociology',
+                    text: "The dialectical interplay between structure and agency manifests in the habituated practices of social actors, whose dispositional tendencies are simultaneously constituted by and constitutive of the field-specific logics that govern symbolic capital accumulation.",
+                  },
+                  {
+                    label: 'Business',
+                    text: "Leveraging synergistic cross-functional alignments, we can operationalize a paradigm shift toward customer-centric value propositions that drive sustainable competitive advantage through iterative optimization of touchpoint experiences.",
+                  },
+                  {
+                    label: 'Philosophy',
+                    text: "The epistemological ramifications of post-structuralist deconstruction necessitate a fundamental reconceptualization of the ontological status of textual meaning, whereby the signifier-signified relationship is revealed as inherently unstable and contingent upon the differance that perpetually defers presence.",
+                  },
+                ].map((example) => (
+                  <button
+                    key={example.label}
+                    onClick={() => setText(example.text)}
+                    className="w-full text-left p-4 bg-white hover:bg-cream-50 border border-cream-300 hover:border-cream-400 rounded-xl text-sm text-warm-700 shadow-soft"
+                    disabled={loading}
+                  >
+                    <span className="text-xs font-semibold text-terracotta-500 uppercase tracking-wider">{example.label}</span>
+                    <p className="mt-1 text-warm-600 line-clamp-2">&ldquo;{example.text.slice(0, 120)}...&rdquo;</p>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         ) : (
-          /* Results Section */
           <ResultsPanel result={result} />
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white mt-auto">
-        <div className="max-w-6xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
-          Powered by Claude AI. Fighting academic jargon one paragraph at a time.
-        </div>
-      </footer>
     </div>
   );
 }

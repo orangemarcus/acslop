@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { translateText, translateImage } from '@/lib/claude';
 import { calculateSlopIndex } from '@/lib/slopCalculator';
-import { TranslateRequest, TranslateResponse, PhraseMapping } from '@/types';
+import { TranslateRequest, TranslateResponse, PhraseMapping, HallucinationFlag } from '@/types';
 
 // --- Rate limiting ---
 const MAX_REQUESTS_PER_MINUTE = 10;
@@ -85,12 +85,21 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    const hallucinations: HallucinationFlag[] = (analysis.hallucinations || []).map((h) => ({
+      type: h.type as HallucinationFlag['type'],
+      severity: h.severity as HallucinationFlag['severity'],
+      text: h.text,
+      explanation: h.explanation,
+      suggestion: h.suggestion,
+    }));
+
     const response: TranslateResponse = {
       original: originalText,
       translated: analysis.translated,
       slopIndex,
       coreClaim: analysis.coreClaim,
       mappings,
+      hallucinations,
     };
 
     return NextResponse.json(response);

@@ -12,64 +12,60 @@ export default function SlopGauge({ slopIndex }: SlopGaugeProps) {
   const label = getSlopLabel(score);
   const color = getSlopColor(score);
 
+  // Calculate the progress ring
+  const circumference = 2 * Math.PI * 36;
+  const progress = (score / 100) * circumference;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Academic Slop Index</h3>
+    <div className="bg-white rounded-2xl border border-cream-300 p-5 shadow-soft">
+      <h3 className="text-sm font-semibold text-warm-800 mb-4">Complexity Index</h3>
 
-      {/* Main gauge */}
-      <div className="relative mb-4">
-        <div className="flex items-center justify-center">
-          <div className="relative w-32 h-16 overflow-hidden">
-            {/* Background arc */}
-            <div
-              className="absolute inset-0 rounded-t-full border-8 border-gray-200"
-              style={{ borderBottomWidth: 0 }}
+      {/* Circular gauge */}
+      <div className="flex justify-center mb-4">
+        <div className="relative w-24 h-24">
+          <svg className="w-24 h-24 -rotate-90" viewBox="0 0 80 80">
+            <circle
+              cx="40" cy="40" r="36"
+              fill="none"
+              stroke="#F0EBE3"
+              strokeWidth="6"
             />
-            {/* Filled arc - using a pseudo element approach with rotation */}
-            <div
-              className="absolute bottom-0 left-1/2 w-1 h-14 origin-bottom transition-transform duration-500"
-              style={{
-                transform: `translateX(-50%) rotate(${(score / 100) * 180 - 90}deg)`,
-                background: color
-              }}
+            <circle
+              cx="40" cy="40" r="36"
+              fill="none"
+              stroke={color}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${progress} ${circumference}`}
+              className="transition-all duration-700 ease-out"
             />
-            {/* Center cover */}
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-10 bg-white rounded-t-full" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold text-warm-900">{score}</span>
           </div>
-        </div>
-
-        {/* Score display */}
-        <div className="text-center -mt-2">
-          <span className="text-3xl font-bold" style={{ color }}>{score}</span>
-          <span className="text-sm text-gray-500">/100</span>
-        </div>
-        <div className="text-center mt-1">
-          <span className="text-sm font-medium" style={{ color }}>{label}</span>
         </div>
       </div>
 
+      <div className="text-center mb-4">
+        <span className="text-sm font-medium px-3 py-1 rounded-full" style={{ color, backgroundColor: `${color}15` }}>
+          {label}
+        </span>
+      </div>
+
       {/* Breakdown */}
-      <div className="space-y-2 text-xs">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Passive Voice</span>
-          <span className="font-medium text-gray-900">{breakdown.passiveVoice}%</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Nominalizations</span>
-          <span className="font-medium text-gray-900">{breakdown.nominalizations}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Hedge Words</span>
-          <span className="font-medium text-gray-900">{breakdown.hedgeWords}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Jargon Density</span>
-          <span className="font-medium text-gray-900">{breakdown.jargonDensity}/sent</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Avg Sentence Length</span>
-          <span className="font-medium text-gray-900">{breakdown.sentenceLength} words</span>
-        </div>
+      <div className="space-y-2.5">
+        {[
+          { label: 'Passive Voice', value: `${breakdown.passiveVoice}%` },
+          { label: 'Nominalizations', value: String(breakdown.nominalizations) },
+          { label: 'Hedge Words', value: String(breakdown.hedgeWords) },
+          { label: 'Jargon Density', value: `${breakdown.jargonDensity}/sent` },
+          { label: 'Avg Sentence Length', value: `${breakdown.sentenceLength} words` },
+        ].map((item) => (
+          <div key={item.label} className="flex justify-between items-center text-xs">
+            <span className="text-warm-600">{item.label}</span>
+            <span className="font-medium text-warm-800">{item.value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

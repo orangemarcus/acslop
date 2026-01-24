@@ -1,22 +1,23 @@
 export interface TranslateRequest {
   text?: string;
-  image?: string; // Base64 encoded image
+  image?: string;
   options?: {
     extractClaim?: boolean;
     generateMappings?: boolean;
+    checkHallucinations?: boolean;
   };
 }
 
 export interface SlopBreakdown {
-  passiveVoice: number;      // % of sentences
-  nominalizations: number;   // Count of -tion, -ism, -ity words
-  hedgeWords: number;        // Count of hedge words
-  jargonDensity: number;     // Jargon words per sentence
-  sentenceLength: number;    // Avg words per sentence
+  passiveVoice: number;
+  nominalizations: number;
+  hedgeWords: number;
+  jargonDensity: number;
+  sentenceLength: number;
 }
 
 export interface SlopIndex {
-  score: number;             // 0-100
+  score: number;
   breakdown: SlopBreakdown;
 }
 
@@ -28,12 +29,21 @@ export interface PhraseMapping {
   explanation?: string;
 }
 
+export interface HallucinationFlag {
+  type: 'fake_source' | 'incomplete_citation' | 'suspicious_arxiv' | 'fabricated_data' | 'unverifiable_claim';
+  severity: 'high' | 'medium' | 'low';
+  text: string;
+  explanation: string;
+  suggestion?: string;
+}
+
 export interface TranslateResponse {
   original: string;
   translated: string;
   slopIndex: SlopIndex;
   coreClaim: string;
   mappings: PhraseMapping[];
+  hallucinations: HallucinationFlag[];
 }
 
 export interface ClaudeAnalysis {
@@ -49,5 +59,12 @@ export interface ClaudeAnalysis {
     original: string;
     translated: string;
     explanation: string;
+  }>;
+  hallucinations: Array<{
+    type: string;
+    severity: string;
+    text: string;
+    explanation: string;
+    suggestion?: string;
   }>;
 }

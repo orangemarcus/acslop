@@ -24,13 +24,13 @@ export default function TextInput({ onTextChange, disabled }: TextInputProps) {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
-        <label htmlFor="academic-text" className="text-sm font-medium text-gray-700">
-          Paste Academic Text
+        <label htmlFor="academic-text" className="text-sm font-medium text-warm-800">
+          Paste academic text
         </label>
         {text && (
           <button
             onClick={handleClear}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-warm-600 hover:text-warm-900"
             disabled={disabled}
           >
             Clear
@@ -43,9 +43,9 @@ export default function TextInput({ onTextChange, disabled }: TextInputProps) {
         onChange={handleChange}
         disabled={disabled}
         placeholder="Paste that dense, jargon-filled academic prose here..."
-        className="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900 placeholder-gray-400"
+        className="w-full h-52 p-4 bg-cream-50 border border-cream-300 rounded-xl resize-none focus:ring-2 focus:ring-terracotta-500/20 focus:border-terracotta-500 disabled:opacity-50 disabled:cursor-not-allowed text-warm-900 placeholder-cream-400 text-sm leading-relaxed"
       />
-      <div className="mt-1 text-xs text-gray-500 text-right">
+      <div className="mt-1.5 text-xs text-warm-600 text-right">
         {text.split(/\s+/).filter(w => w).length} words
       </div>
     </div>

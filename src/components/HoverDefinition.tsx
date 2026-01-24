@@ -12,31 +12,26 @@ export default function HoverDefinition({ text, mappings }: HoverDefinitionProps
   const [hoveredMapping, setHoveredMapping] = useState<PhraseMapping | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  // Build highlighted text with hoverable spans
   const buildHighlightedText = () => {
     if (!mappings.length) {
       return <span>{text}</span>;
     }
 
-    // Sort mappings by start index
     const sortedMappings = [...mappings].sort((a, b) => a.startIndex - b.startIndex);
-
     const elements: React.ReactNode[] = [];
     let lastIndex = 0;
 
     sortedMappings.forEach((mapping, idx) => {
-      // Add text before this mapping
       if (mapping.startIndex > lastIndex) {
         elements.push(
           <span key={`text-${idx}`}>{text.slice(lastIndex, mapping.startIndex)}</span>
         );
       }
 
-      // Add the highlighted mapping
       elements.push(
         <span
           key={`mapping-${idx}`}
-          className="bg-yellow-100 border-b border-yellow-400 cursor-help transition-colors hover:bg-yellow-200"
+          className="bg-terracotta-50 border-b border-terracotta-500/40 cursor-help hover:bg-terracotta-100 rounded-sm px-0.5"
           onMouseEnter={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setTooltipPosition({ x: rect.left, y: rect.bottom + 8 });
@@ -51,7 +46,6 @@ export default function HoverDefinition({ text, mappings }: HoverDefinitionProps
       lastIndex = mapping.endIndex;
     });
 
-    // Add remaining text
     if (lastIndex < text.length) {
       elements.push(<span key="text-end">{text.slice(lastIndex)}</span>);
     }
@@ -61,23 +55,22 @@ export default function HoverDefinition({ text, mappings }: HoverDefinitionProps
 
   return (
     <div className="relative">
-      <p className="text-gray-800 leading-relaxed">{buildHighlightedText()}</p>
+      <p className="text-warm-800 leading-relaxed text-sm">{buildHighlightedText()}</p>
 
-      {/* Tooltip */}
       {hoveredMapping && (
         <div
-          className="fixed z-50 max-w-xs bg-gray-900 text-white text-sm rounded-lg shadow-lg p-3 pointer-events-none"
+          className="fixed z-50 max-w-xs bg-warm-900 text-white text-sm rounded-xl shadow-lg p-4 pointer-events-none"
           style={{
-            left: Math.min(tooltipPosition.x, window.innerWidth - 300),
+            left: Math.min(tooltipPosition.x, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 300),
             top: tooltipPosition.y,
           }}
         >
-          <div className="font-medium text-yellow-300 mb-1">Original:</div>
-          <div className="text-gray-200 mb-2">&ldquo;{hoveredMapping.originalPhrase}&rdquo;</div>
+          <div className="text-[10px] uppercase tracking-wider text-cream-300 mb-1">Original jargon</div>
+          <div className="text-cream-100 mb-2.5 font-serif italic">&ldquo;{hoveredMapping.originalPhrase}&rdquo;</div>
           {hoveredMapping.explanation && (
             <>
-              <div className="font-medium text-yellow-300 mb-1">Why it&apos;s slop:</div>
-              <div className="text-gray-300 text-xs">{hoveredMapping.explanation}</div>
+              <div className="text-[10px] uppercase tracking-wider text-cream-300 mb-1">Why it obscures meaning</div>
+              <div className="text-cream-200 text-xs">{hoveredMapping.explanation}</div>
             </>
           )}
         </div>

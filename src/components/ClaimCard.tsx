@@ -6,11 +6,11 @@ interface ClaimCardProps {
 
 export default function ClaimCard({ claim }: ClaimCardProps) {
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
+    <div className="bg-white rounded-2xl border border-cream-300 p-5 shadow-soft">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+        <div className="flex-shrink-0 w-9 h-9 bg-terracotta-50 rounded-full flex items-center justify-center">
           <svg
-            className="w-4 h-4 text-blue-600"
+            className="w-4 h-4 text-terracotta-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -24,8 +24,8 @@ export default function ClaimCard({ claim }: ClaimCardProps) {
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-blue-800 mb-1">Core Claim</h3>
-          <p className="text-gray-700">{claim}</p>
+          <h3 className="text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">Core Claim</h3>
+          <p className="text-warm-900 leading-relaxed">{claim}</p>
         </div>
       </div>
     </div>

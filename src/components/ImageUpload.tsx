@@ -21,7 +21,6 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setPreview(result);
-      // Extract base64 data (remove data URL prefix)
       const base64 = result.split(',')[1];
       onImageSelect(base64);
     };
@@ -30,9 +29,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!disabled) {
-      setIsDragging(true);
-    }
+    if (!disabled) setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -44,18 +41,13 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
     e.preventDefault();
     setIsDragging(false);
     if (disabled) return;
-
     const file = e.dataTransfer.files[0];
-    if (file) {
-      processFile(file);
-    }
+    if (file) processFile(file);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      processFile(file);
-    }
+    if (file) processFile(file);
   };
 
   const handleClear = () => {
@@ -66,13 +58,13 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-gray-700">
-          Or Upload Image
+        <label className="text-sm font-medium text-warm-800">
+          Or upload an image
         </label>
         {preview && (
           <button
             onClick={handleClear}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-warm-600 hover:text-warm-900"
             disabled={disabled}
           >
             Remove
@@ -81,7 +73,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
       </div>
 
       {preview ? (
-        <div className="relative w-full h-48 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+        <div className="relative w-full h-52 border border-cream-300 rounded-xl overflow-hidden bg-cream-50">
           <img
             src={preview}
             alt="Uploaded preview"
@@ -93,10 +85,10 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+          className={`w-full h-52 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer ${
             isDragging
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-terracotta-500 bg-terracotta-50'
+              : 'border-cream-300 hover:border-cream-400 bg-cream-50'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <input
@@ -112,7 +104,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
             className={`flex flex-col items-center ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <svg
-              className="w-10 h-10 text-gray-400 mb-2"
+              className="w-10 h-10 text-cream-400 mb-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -124,11 +116,11 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span className="text-sm text-gray-600">
-              Drag & drop an image or <span className="text-blue-600">browse</span>
+            <span className="text-sm text-warm-600">
+              Drag & drop or <span className="text-terracotta-500 font-medium">browse</span>
             </span>
-            <span className="text-xs text-gray-400 mt-1">
-              Screenshots, PDFs rendered as images, etc.
+            <span className="text-xs text-warm-600 mt-1">
+              Screenshots of papers, PDFs as images
             </span>
           </label>
         </div>

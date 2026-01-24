@@ -25,7 +25,12 @@ export async function translateText(text: string): Promise<ClaudeAnalysis> {
   }
 
   try {
-    return JSON.parse(content.text) as ClaudeAnalysis;
+    const parsed = JSON.parse(content.text) as ClaudeAnalysis;
+    // Ensure hallucinations array exists
+    if (!parsed.hallucinations) {
+      parsed.hallucinations = [];
+    }
+    return parsed;
   } catch {
     throw new Error('Failed to parse Claude response as JSON');
   }
@@ -35,11 +40,10 @@ export async function translateImage(
   base64Image: string,
   mediaType: ImageMediaType = 'image/png'
 ): Promise<{ extractedText: string; analysis: ClaudeAnalysis }> {
-  // First, extract text from image and translate in one call
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 4096,
-    system: buildImagePrompt(true),
+    system: buildImagePrompt(),
     messages: [
       {
         role: 'user',
@@ -54,24 +58,33 @@ export async function translateImage(
           },
           {
             type: 'text',
-            text: `Extract all text from this image and then translate it into plain English.
+            text: `Extract all text from this image, then translate it for a first-year university student and check for hallucinations.
 
 Provide your response as JSON with this exact structure:
 {
   "extractedText": "The original text extracted from the image",
-  "translated": "The plain English translation",
-  "coreClaim": "One sentence: what is this actually saying?",
+  "translated": "The clear, student-friendly translation",
+  "coreClaim": "One clear sentence explaining the main argument or finding",
   "slopAnalysis": {
-    "passiveVoiceExamples": ["list of passive constructions found"],
-    "nominalizationsFound": ["list of -tion/-ism/-ity words that could be verbs"],
-    "hedgeWordsFound": ["perhaps", "it could be argued", etc],
-    "unnecessaryJargon": [{"jargon": "jargon word", "plain": "plain equivalent"}]
+    "passiveVoiceExamples": [],
+    "nominalizationsFound": [],
+    "hedgeWordsFound": [],
+    "unnecessaryJargon": []
   },
   "mappings": [
     {
-      "original": "original jargon phrase",
+      "original": "original phrase",
       "translated": "plain version",
-      "explanation": "why this is slop"
+      "explanation": "why it obscures meaning"
+    }
+  ],
+  "hallucinations": [
+    {
+      "type": "fake_source|incomplete_citation|suspicious_arxiv|fabricated_data|unverifiable_claim",
+      "severity": "high|medium|low",
+      "text": "problematic text",
+      "explanation": "why suspicious",
+      "suggestion": "how to verify"
     }
   ]
 }`,
@@ -89,6 +102,9 @@ Provide your response as JSON with this exact structure:
   try {
     const parsed = JSON.parse(content.text);
     const { extractedText, ...analysis } = parsed;
+    if (!analysis.hallucinations) {
+      analysis.hallucinations = [];
+    }
     return {
       extractedText: extractedText || '',
       analysis: analysis as ClaudeAnalysis,
