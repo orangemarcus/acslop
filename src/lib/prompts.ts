@@ -34,7 +34,7 @@ Provide your response as JSON with this exact structure:
   "slopAnalysis": {
     "passiveVoiceExamples": ["list of passive constructions found"],
     "nominalizationsFound": ["list of abstract -tion/-ism/-ity words used instead of concrete verbs"],
-    "hedgeWordsFound": ["perhaps", "it could be argued", "arguably", etc],
+    "hedgeWordsFound": ["perhaps", "it could be argued", "arguably"],
     "unnecessaryJargon": [{"jargon": "jargon term", "plain": "plain equivalent"}]
   },
   "mappings": [
