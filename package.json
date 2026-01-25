@@ -1,8 +1,7 @@
 {
-  "name": "acslop",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "macro-economics-dashboard",
+  "version": "0.1.0",
+  "description": "A streamlined macro economics dashboard for tracking portfolios, market trends, and financial news at a glance",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,11 +10,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://local_proxy@127.0.0.1:20651/git/orangemarcus/acslop"
+    "url": "https://github.com/orangemarcus/acslop"
   },
-  "keywords": [],
+  "keywords": [
+    "finance",
+    "portfolio",
+    "dashboard",
+    "stocks",
+    "crypto",
+    "market-data",
+    "nextjs"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@types/node": "^25.0.10",
     "@types/react": "^19.2.9",
