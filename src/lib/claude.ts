@@ -8,8 +8,8 @@ const API_TIMEOUT_MS = 90_000; // 90 seconds (Haiku is faster)
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
-// Use Haiku for speed — it's 10x faster than Sonnet
-const MODEL = 'claude-3-5-haiku-20241022';
+// Use Haiku 4.5 for speed and quality
+const MODEL = 'claude-haiku-4-5-20250101';
 
 function extractJSON(text: string): string {
   const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
