@@ -86,28 +86,50 @@ export function buildImagePrompt(level: ComplexityLevel): string {
 
   return `Analyze this academic image and explain what it means in plain English at complexity level ${level} (${contextPercent}% context preservation).
 
-This could be:
-- A FIGURE/CHART/GRAPH: Explain what it shows, what the axes mean, what trends or patterns are visible, and what conclusion the reader should draw
-- An EQUATION/FORMULA: Explain what each symbol means, what the equation calculates, and why it matters
-- A DIAGRAM/FLOWCHART: Explain the process or relationship being illustrated
-- A TABLE: Summarize the key findings and what they mean
-- TEXT from a paper: Translate the academic jargon into plain English
+IMAGE TYPES AND HOW TO HANDLE THEM:
+
+**EQUATIONS/MATH:**
+- Identify ALL symbols (Greek letters, operators, subscripts, superscripts)
+- Explain what the equation COMPUTES in plain words (e.g., "This calculates how fast something changes over time")
+- Give a concrete example with numbers if helpful
+- Explain WHY this equation matters in the context
+
+**GRAPHS/CHARTS:**
+- State what the X and Y axes represent
+- Describe the trend/pattern (increasing, decreasing, exponential, etc.)
+- Point out any key inflection points, peaks, or anomalies
+- State the CONCLUSION: what should the reader take away?
+
+**STATISTICAL PLOTS (scatter, box plots, histograms, heatmaps):**
+- Explain what relationship or distribution is being shown
+- Note any correlations, outliers, or clusters
+- Interpret confidence intervals or error bars if present
+
+**DIAGRAMS/ARCHITECTURES:**
+- Explain the flow from input to output
+- Describe what each component does
+- Explain how the parts connect and why
+
+**TABLES:**
+- Identify the key comparison being made
+- Highlight the most important rows/columns
+- State the main finding
 
 ${LEVEL_INSTRUCTIONS[level]}
 
-IMPORTANT:
-- Don't just describe what you see - EXPLAIN what it MEANS
-- If it's a graph, tell me what story the data tells
-- If it's an equation, tell me what it calculates in plain words
-- Match explanation length to ${contextPercent}% context preservation
+CRITICAL RULES:
+- Don't just describe - INTERPRET and EXPLAIN
+- For math: translate symbols into words ("∂" = "partial derivative" = "how X changes when only Y changes")
+- For graphs: tell the STORY the data shows
+- Match explanation depth to ${contextPercent}% context preservation
 
 Respond with JSON:
 {
-  "extractedText": "Any text/labels visible in the image, or description of visual elements",
-  "translated": "Your explanation of what this image means and why it matters - not just a description, but an INTERPRETATION",
-  "coreClaim": "One sentence: the key takeaway from this image",
+  "extractedText": "Transcribe any text, labels, equations (in LaTeX-style if complex), axis labels visible",
+  "translated": "Your INTERPRETATION: what does this mean, why does it matter, what should the reader understand",
+  "coreClaim": "One sentence: the key insight from this image",
   "slopAnalysis": {"passiveVoiceExamples": [], "nominalizationsFound": [], "hedgeWordsFound": [], "unnecessaryJargon": []},
-  "mappings": [{"original": "technical term/symbol", "translated": "plain meaning", "explanation": "context"}],
+  "mappings": [{"original": "symbol or term", "translated": "plain meaning", "explanation": "why it's used"}],
   "hallucinations": []
 }`;
 }
