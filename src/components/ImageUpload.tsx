@@ -58,13 +58,13 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-warm-800">
+        <label className="text-sm font-medium text-warm-800 dark:text-warm-200">
           Or upload an image
         </label>
         {preview && (
           <button
             onClick={handleClear}
-            className="text-xs text-warm-600 hover:text-warm-900"
+            className="text-xs text-warm-600 hover:text-warm-900 dark:text-warm-400 dark:hover:text-warm-200"
             disabled={disabled}
           >
             Remove
@@ -73,7 +73,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
       </div>
 
       {preview ? (
-        <div className="relative w-full h-52 border border-cream-300 rounded-xl overflow-hidden bg-cream-50">
+        <div className="relative w-full h-52 border border-cream-300 dark:border-warm-700 rounded-xl overflow-hidden bg-cream-50 dark:bg-warm-800">
           <img
             src={preview}
             alt="Uploaded preview"
@@ -87,8 +87,8 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
           onDrop={handleDrop}
           className={`w-full h-52 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer ${
             isDragging
-              ? 'border-terracotta-500 bg-terracotta-50'
-              : 'border-cream-300 hover:border-cream-400 bg-cream-50'
+              ? 'border-terracotta-500 bg-terracotta-50 dark:bg-terracotta-500/10'
+              : 'border-cream-300 dark:border-warm-600 hover:border-cream-400 dark:hover:border-warm-500 bg-cream-50 dark:bg-warm-800'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <input
@@ -104,7 +104,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
             className={`flex flex-col items-center ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <svg
-              className="w-10 h-10 text-cream-400 mb-3"
+              className="w-10 h-10 text-cream-400 dark:text-warm-500 mb-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -116,10 +116,10 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span className="text-sm text-warm-600">
+            <span className="text-sm text-warm-600 dark:text-warm-400">
               Drag & drop or <span className="text-terracotta-500 font-medium">browse</span>
             </span>
-            <span className="text-xs text-warm-600 mt-1">
+            <span className="text-xs text-warm-600 dark:text-warm-500 mt-1">
               Screenshots of papers, PDFs as images
             </span>
           </label>

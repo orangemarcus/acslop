@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -14,9 +15,14 @@ module.exports = {
           400: '#D4CCC2',
         },
         warm: {
+          100: '#FAF7F2',
+          200: '#E8E2DA',
+          300: '#C9C4BD',
+          400: '#A8A29E',
+          500: '#8C857D',
           600: '#5C5650',
-          700: '#3D3833',
-          800: '#2A2622',
+          700: '#3D3935',
+          800: '#2D2A27',
           900: '#1A1714',
         },
         terracotta: {

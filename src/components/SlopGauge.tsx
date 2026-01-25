@@ -17,8 +17,8 @@ export default function SlopGauge({ slopIndex }: SlopGaugeProps) {
   const progress = (score / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-2xl border border-cream-300 p-5 shadow-soft">
-      <h3 className="text-sm font-semibold text-warm-800 mb-4">Complexity Index</h3>
+    <div className="bg-white dark:bg-warm-800 rounded-2xl border border-cream-300 dark:border-warm-700 p-5 shadow-soft">
+      <h3 className="text-sm font-semibold text-warm-800 dark:text-warm-200 mb-4">Complexity Index</h3>
 
       {/* Circular gauge */}
       <div className="flex justify-center mb-4">
@@ -27,7 +27,7 @@ export default function SlopGauge({ slopIndex }: SlopGaugeProps) {
             <circle
               cx="40" cy="40" r="36"
               fill="none"
-              stroke="#F0EBE3"
+              className="stroke-cream-200 dark:stroke-warm-700"
               strokeWidth="6"
             />
             <circle
@@ -41,7 +41,7 @@ export default function SlopGauge({ slopIndex }: SlopGaugeProps) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-warm-900">{score}</span>
+            <span className="text-2xl font-bold text-warm-900 dark:text-warm-100">{score}</span>
           </div>
         </div>
       </div>
@@ -62,8 +62,8 @@ export default function SlopGauge({ slopIndex }: SlopGaugeProps) {
           { label: 'Avg Sentence Length', value: `${breakdown.sentenceLength} words` },
         ].map((item) => (
           <div key={item.label} className="flex justify-between items-center text-xs">
-            <span className="text-warm-600">{item.label}</span>
-            <span className="font-medium text-warm-800">{item.value}</span>
+            <span className="text-warm-600 dark:text-warm-400">{item.label}</span>
+            <span className="font-medium text-warm-800 dark:text-warm-200">{item.value}</span>
           </div>
         ))}
       </div>

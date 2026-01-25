@@ -31,7 +31,7 @@ export default function HoverDefinition({ text, mappings }: HoverDefinitionProps
       elements.push(
         <span
           key={`mapping-${idx}`}
-          className="bg-terracotta-50 border-b border-terracotta-500/40 cursor-help hover:bg-terracotta-100 rounded-sm px-0.5"
+          className="bg-terracotta-50 dark:bg-terracotta-500/20 border-b border-terracotta-500/40 cursor-help hover:bg-terracotta-100 dark:hover:bg-terracotta-500/30 rounded-sm px-0.5"
           onMouseEnter={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setTooltipPosition({ x: rect.left, y: rect.bottom + 8 });
@@ -55,7 +55,7 @@ export default function HoverDefinition({ text, mappings }: HoverDefinitionProps
 
   return (
     <div className="relative">
-      <p className="text-warm-800 leading-relaxed text-sm">{buildHighlightedText()}</p>
+      <p className="text-warm-800 dark:text-warm-200 leading-relaxed text-sm">{buildHighlightedText()}</p>
 
       {hoveredMapping && (
         <div
