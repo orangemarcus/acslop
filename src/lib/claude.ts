@@ -4,7 +4,7 @@ import { TRANSLATION_SYSTEM_PROMPT, buildTranslationPrompt, buildImagePrompt } f
 
 const anthropic = new Anthropic();
 
-const API_TIMEOUT_MS = 60_000; // 60 seconds
+const API_TIMEOUT_MS = 120_000; // 2 minutes
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
