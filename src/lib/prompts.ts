@@ -84,19 +84,30 @@ Empty arrays are fine if nothing found.`;
 export function buildImagePrompt(level: ComplexityLevel): string {
   const contextPercent = [10, 30, 50, 70, 90][level - 1];
 
-  return `First extract all text from this image, then translate it at complexity level ${level} (${contextPercent}% context preservation).
+  return `Analyze this academic image and explain what it means in plain English at complexity level ${level} (${contextPercent}% context preservation).
+
+This could be:
+- A FIGURE/CHART/GRAPH: Explain what it shows, what the axes mean, what trends or patterns are visible, and what conclusion the reader should draw
+- An EQUATION/FORMULA: Explain what each symbol means, what the equation calculates, and why it matters
+- A DIAGRAM/FLOWCHART: Explain the process or relationship being illustrated
+- A TABLE: Summarize the key findings and what they mean
+- TEXT from a paper: Translate the academic jargon into plain English
 
 ${LEVEL_INSTRUCTIONS[level]}
 
-IMPORTANT: Match the translation length to ${contextPercent}% context preservation.
+IMPORTANT:
+- Don't just describe what you see - EXPLAIN what it MEANS
+- If it's a graph, tell me what story the data tells
+- If it's an equation, tell me what it calculates in plain words
+- Match explanation length to ${contextPercent}% context preservation
 
 Respond with JSON:
 {
-  "extractedText": "The text from the image",
-  "translated": "Your translation - length should reflect ${contextPercent}% context",
-  "coreClaim": "One sentence main point",
+  "extractedText": "Any text/labels visible in the image, or description of visual elements",
+  "translated": "Your explanation of what this image means and why it matters - not just a description, but an INTERPRETATION",
+  "coreClaim": "One sentence: the key takeaway from this image",
   "slopAnalysis": {"passiveVoiceExamples": [], "nominalizationsFound": [], "hedgeWordsFound": [], "unnecessaryJargon": []},
-  "mappings": [],
+  "mappings": [{"original": "technical term/symbol", "translated": "plain meaning", "explanation": "context"}],
   "hallucinations": []
 }`;
 }

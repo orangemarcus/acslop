@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface ImageUploadProps {
   onImageSelect: (base64: string | null) => void;
@@ -10,6 +10,7 @@ interface ImageUploadProps {
 export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -26,6 +27,29 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
     };
     reader.readAsDataURL(file);
   }, [onImageSelect]);
+
+  // Handle paste from clipboard (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (disabled) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) processFile(file);
+          break;
+        }
+      }
+    };
+
+    // Listen on document for global paste
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [disabled, processFile]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -56,7 +80,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       <div className="flex justify-between items-center mb-2">
         <label className="text-sm font-medium text-warm-800 dark:text-warm-200">
           Or upload an image
@@ -117,10 +141,10 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
               />
             </svg>
             <span className="text-sm text-warm-600 dark:text-warm-400">
-              Drag & drop or <span className="text-terracotta-500 font-medium">browse</span>
+              <span className="text-terracotta-500 font-medium">Ctrl+V</span> to paste, drag & drop, or <span className="text-terracotta-500 font-medium">browse</span>
             </span>
             <span className="text-xs text-warm-600 dark:text-warm-500 mt-1">
-              Screenshots of papers, PDFs as images
+              Figures, charts, equations, screenshots
             </span>
           </label>
         </div>
