@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import TextInput from '@/components/TextInput';
 import ImageUpload from '@/components/ImageUpload';
+import LevelSelector from '@/components/LevelSelector';
 import ResultsPanel from '@/components/ResultsPanel';
-import { TranslateResponse } from '@/types';
+import { TranslateResponse, ComplexityLevel } from '@/types';
 
 export default function Home() {
   const [text, setText] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [level, setLevel] = useState<ComplexityLevel>(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TranslateResponse | null>(null);
@@ -30,6 +32,7 @@ export default function Home() {
         body: JSON.stringify({
           text: text || undefined,
           image: image || undefined,
+          level,
         }),
       });
 
@@ -93,24 +96,29 @@ export default function Home() {
             <div className="text-center max-w-lg mx-auto">
               <h2 className="text-2xl font-serif text-warm-900 mb-2">What would you like to understand?</h2>
               <p className="text-sm text-warm-600">
-                Paste academic text or upload an image. I&apos;ll translate it so a first-year student can follow along, and check for hallucinated citations.
+                Paste academic text or upload an image. Choose your detail level, and I&apos;ll translate it and check for hallucinated citations.
               </p>
             </div>
 
             {/* Input card */}
             <div className="bg-white rounded-2xl border border-cream-300 p-6 shadow-soft">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <TextInput onTextChange={setText} disabled={loading} />
                 <ImageUpload onImageSelect={setImage} disabled={loading} />
               </div>
 
+              {/* Level selector */}
+              <div className="mb-6">
+                <LevelSelector level={level} onChange={setLevel} disabled={loading} />
+              </div>
+
               {error && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                   {error}
                 </div>
               )}
 
-              <div className="mt-6 flex justify-center">
+              <div className="flex justify-center">
                 <button
                   onClick={handleTranslate}
                   disabled={loading || (!text && !image)}

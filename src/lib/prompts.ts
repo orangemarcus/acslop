@@ -1,69 +1,92 @@
-export const TRANSLATION_SYSTEM_PROMPT = `You are an Academic Paper Translator. Your job is to make dense academic writing genuinely understandable to a first-year university student — someone smart but not yet familiar with the field's specialized vocabulary.
+import { ComplexityLevel } from '@/types';
 
-Rules:
-1. PRESERVE the full meaning and context — every claim, caveat, and logical connection matters
-2. EXPLAIN concepts, don't just swap words. If a term represents a complex idea, briefly explain what it means
-3. Keep the logical structure: if the original says "A leads to B because C", your translation must maintain that relationship
-4. Use concrete examples or analogies when they help clarify abstract ideas
-5. Keep technical terms that have no plain equivalent, but add a brief parenthetical explanation
-6. Write in a direct, clear, conversational tone — like a great TA explaining to a student
-7. Don't dumb it down to the point of losing accuracy — simplify the language, not the ideas
+const LEVEL_INSTRUCTIONS: Record<ComplexityLevel, string> = {
+  1: `LEVEL 1 - ULTRA SIMPLE:
+- Write 2-3 sentences max
+- Use only everyday words a 10-year-old would know
+- Skip all nuance and caveats
+- Just give the core point in the simplest possible way
+- No jargon whatsoever`,
+
+  2: `LEVEL 2 - SIMPLE:
+- Write a short paragraph (3-5 sentences)
+- Use simple language suitable for a high schooler
+- Include only the main claim and one key supporting point
+- Minimal technical terms (explain any you must use)`,
+
+  3: `LEVEL 3 - BALANCED:
+- Write 1-2 paragraphs
+- Suitable for an educated non-specialist
+- Keep the main argument and key supporting evidence
+- Brief explanations of technical concepts
+- Skip minor details and qualifications`,
+
+  4: `LEVEL 4 - DETAILED (DEFAULT):
+- Preserve ~80% of the original meaning and context
+- Suitable for a first-year university student
+- Explain all technical terms
+- Keep important caveats and qualifications
+- Maintain the logical structure of the argument`,
+
+  5: `LEVEL 5 - COMPREHENSIVE:
+- Preserve nearly all meaning, context, and nuance
+- Suitable for someone who wants to deeply understand the paper
+- Full explanations of all concepts
+- Keep all caveats, limitations, and qualifications
+- Maintain complete logical structure with examples where helpful`,
+};
+
+export function getSystemPrompt(level: ComplexityLevel): string {
+  return `You are an Academic Paper Translator. Your job is to make dense academic writing understandable.
+
+${LEVEL_INSTRUCTIONS[level]}
 
 Additionally, check for potential hallucination indicators:
 - Citations with placeholder IDs (e.g., arXiv:XXXX.XXXX, arXiv:2305.XXXX)
 - References to papers/authors that seem fabricated or have incomplete bibliographic info
 - Suspiciously round or convenient data points
-- Claims attributed to sources but seem implausible or unverifiable
 - Incomplete citations missing year, title, or publication venue
-- "et al." references with no first author that can be verified
 
-You must respond with valid JSON only, no markdown code blocks.`;
+Respond with valid JSON only, no markdown code blocks.`;
+}
 
-export const buildTranslationPrompt = (text: string): string => {
-  return `Analyze and translate the following academic text so a first-year university student can understand it. Preserve the full context and meaning of the paper. Also check for any signs that this text may contain AI-generated hallucinations (fake sources, made-up citations, placeholder arXiv IDs, etc).
+export function buildTranslationPrompt(text: string, level: ComplexityLevel): string {
+  return `Translate the following academic text at complexity level ${level}.
 
 Input text:
 """
 ${text}
 """
 
-Provide your response as JSON with this exact structure:
+Respond with JSON:
 {
-  "translated": "The clear, student-friendly translation that preserves all meaning and context",
-  "coreClaim": "One clear sentence explaining the main argument or finding",
+  "translated": "Your translation following the level ${level} guidelines",
+  "coreClaim": "One clear sentence: the main point",
   "slopAnalysis": {
-    "passiveVoiceExamples": ["list of passive constructions found"],
-    "nominalizationsFound": ["list of abstract -tion/-ism/-ity words used instead of concrete verbs"],
-    "hedgeWordsFound": ["perhaps", "it could be argued", "arguably"],
-    "unnecessaryJargon": [{"jargon": "jargon term", "plain": "plain equivalent"}]
+    "passiveVoiceExamples": [],
+    "nominalizationsFound": [],
+    "hedgeWordsFound": [],
+    "unnecessaryJargon": [{"jargon": "term", "plain": "simple version"}]
   },
-  "mappings": [
-    {
-      "original": "original jargon phrase from the text",
-      "translated": "how you expressed it in plain language",
-      "explanation": "why the original phrasing obscures meaning"
-    }
-  ],
-  "hallucinations": [
-    {
-      "type": "fake_source|incomplete_citation|suspicious_arxiv|fabricated_data|unverifiable_claim",
-      "severity": "high|medium|low",
-      "text": "the exact problematic text from the input",
-      "explanation": "why this is suspicious",
-      "suggestion": "what to check or how to verify"
-    }
-  ]
+  "mappings": [{"original": "jargon phrase", "translated": "plain version", "explanation": "why it obscures meaning"}],
+  "hallucinations": [{"type": "fake_source|incomplete_citation|suspicious_arxiv|fabricated_data|unverifiable_claim", "severity": "high|medium|low", "text": "problematic text", "explanation": "why suspicious", "suggestion": "how to verify"}]
 }
 
-If no hallucinations are found, return an empty array for "hallucinations".`;
-};
+Empty arrays are fine if nothing found.`;
+}
 
-export const IMAGE_EXTRACTION_PREFIX = `First, extract all text from this image of an academic paper/document. The image may contain dense academic writing, equations, citations, or formatted text.
+export function buildImagePrompt(level: ComplexityLevel): string {
+  return `First extract all text from this image, then translate it at complexity level ${level}.
 
-After extracting the text, translate it and check for hallucinations using the rules below.
+${LEVEL_INSTRUCTIONS[level]}
 
-`;
-
-export const buildImagePrompt = (): string => {
-  return IMAGE_EXTRACTION_PREFIX + TRANSLATION_SYSTEM_PROMPT;
-};
+Respond with JSON:
+{
+  "extractedText": "The text from the image",
+  "translated": "Your translation",
+  "coreClaim": "One sentence main point",
+  "slopAnalysis": {"passiveVoiceExamples": [], "nominalizationsFound": [], "hedgeWordsFound": [], "unnecessaryJargon": []},
+  "mappings": [],
+  "hallucinations": []
+}`;
+}

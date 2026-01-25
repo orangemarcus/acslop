@@ -1,11 +1,9 @@
+export type ComplexityLevel = 1 | 2 | 3 | 4 | 5;
+
 export interface TranslateRequest {
   text?: string;
   image?: string;
-  options?: {
-    extractClaim?: boolean;
-    generateMappings?: boolean;
-    checkHallucinations?: boolean;
-  };
+  level?: ComplexityLevel; // 1 = very simple, 5 = detailed (default: 4)
 }
 
 export interface SlopBreakdown {

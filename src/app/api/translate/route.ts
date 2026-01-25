@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { translateText, translateImage } from '@/lib/claude';
 import { calculateSlopIndex } from '@/lib/slopCalculator';
-import { TranslateResponse, PhraseMapping, HallucinationFlag } from '@/types';
+import { TranslateResponse, PhraseMapping, HallucinationFlag, ComplexityLevel } from '@/types';
 
 // --- Rate limiting ---
 const MAX_REQUESTS_PER_MINUTE = 10;
@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
     // Type validation
     const text = typeof body.text === 'string' ? body.text.trim() : '';
     const image = typeof body.image === 'string' ? body.image : '';
+    const rawLevel = typeof body.level === 'number' ? body.level : 4;
+    const level = Math.min(5, Math.max(1, Math.round(rawLevel))) as ComplexityLevel;
 
     if (!text && !image) {
       return NextResponse.json(
@@ -70,12 +72,12 @@ export async function POST(request: NextRequest) {
     let analysis;
 
     if (image) {
-      const result = await translateImage(image);
+      const result = await translateImage(image, level);
       originalText = result.extractedText;
       analysis = result.analysis;
     } else {
       originalText = text;
-      analysis = await translateText(originalText);
+      analysis = await translateText(originalText, level);
     }
 
     // Guard against empty extracted text from images

@@ -1,31 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { ClaudeAnalysis } from '@/types';
-import { TRANSLATION_SYSTEM_PROMPT, buildTranslationPrompt, buildImagePrompt } from './prompts';
+import { ClaudeAnalysis, ComplexityLevel } from '@/types';
+import { getSystemPrompt, buildTranslationPrompt, buildImagePrompt } from './prompts';
 
 const anthropic = new Anthropic();
 
-const API_TIMEOUT_MS = 120_000; // 2 minutes
+const API_TIMEOUT_MS = 90_000; // 90 seconds (Haiku is faster)
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
-/**
- * Extract JSON from Claude's response, handling cases where
- * the model wraps it in markdown code blocks despite instructions.
- */
+// Use Haiku for speed — it's 10x faster than Sonnet
+const MODEL = 'claude-3-5-haiku-20241022';
+
 function extractJSON(text: string): string {
-  // Try to find JSON in a code block first
   const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     return codeBlockMatch[1].trim();
   }
-
-  // Otherwise assume the whole response is JSON
   return text.trim();
 }
 
-/**
- * Parse Claude's response with null-safety defaults for all expected fields.
- */
 function parseAnalysis(raw: Record<string, unknown>): ClaudeAnalysis {
   const slopAnalysis = (raw.slopAnalysis as Record<string, unknown>) || {};
 
@@ -51,20 +44,23 @@ function parseAnalysis(raw: Record<string, unknown>): ClaudeAnalysis {
   };
 }
 
-export async function translateText(text: string): Promise<ClaudeAnalysis> {
+export async function translateText(
+  text: string,
+  level: ComplexityLevel = 4
+): Promise<ClaudeAnalysis> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   try {
     const response = await anthropic.messages.create(
       {
-        model: 'claude-sonnet-4-5-20250929',
+        model: MODEL,
         max_tokens: 4096,
-        system: TRANSLATION_SYSTEM_PROMPT,
+        system: getSystemPrompt(level),
         messages: [
           {
             role: 'user',
-            content: buildTranslationPrompt(text),
+            content: buildTranslationPrompt(text, level),
           },
         ],
       },
@@ -94,6 +90,7 @@ export async function translateText(text: string): Promise<ClaudeAnalysis> {
 
 export async function translateImage(
   base64Image: string,
+  level: ComplexityLevel = 4,
   mediaType: ImageMediaType = 'image/png'
 ): Promise<{ extractedText: string; analysis: ClaudeAnalysis }> {
   const controller = new AbortController();
@@ -102,9 +99,9 @@ export async function translateImage(
   try {
     const response = await anthropic.messages.create(
       {
-        model: 'claude-sonnet-4-5-20250929',
+        model: MODEL,
         max_tokens: 4096,
-        system: buildImagePrompt(),
+        system: getSystemPrompt(level),
         messages: [
           {
             role: 'user',
@@ -119,22 +116,7 @@ export async function translateImage(
               },
               {
                 type: 'text',
-                text: `Extract all text from this image, then translate it for a first-year university student and check for hallucinations.
-
-Respond with JSON only (no code blocks):
-{
-  "extractedText": "The original text extracted from the image",
-  "translated": "The clear, student-friendly translation",
-  "coreClaim": "One clear sentence explaining the main argument or finding",
-  "slopAnalysis": {
-    "passiveVoiceExamples": [],
-    "nominalizationsFound": [],
-    "hedgeWordsFound": [],
-    "unnecessaryJargon": []
-  },
-  "mappings": [],
-  "hallucinations": []
-}`,
+                text: buildImagePrompt(level),
               },
             ],
           },
