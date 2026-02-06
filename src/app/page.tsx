@@ -600,6 +600,12 @@ export default function Home() {
             Academic Slop Translator &mdash; Powered by Claude
           </p>
           <div className="flex items-center gap-4">
+            <a
+              href="/leaderboard"
+              className="hover:text-warm-700 dark:hover:text-warm-300"
+            >
+              Leaderboard
+            </a>
             <button
               onClick={() => setShortcutsOpen(true)}
               className="hover:text-warm-700 dark:hover:text-warm-300 hidden sm:inline"

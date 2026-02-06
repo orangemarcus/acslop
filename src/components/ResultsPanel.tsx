@@ -6,6 +6,8 @@ import SlopGauge from './SlopGauge';
 import ClaimCard from './ClaimCard';
 import HoverDefinition from './HoverDefinition';
 import HallucinationPanel from './HallucinationPanel';
+import WritingTips from './WritingTips';
+import CommunityComparison from './CommunityComparison';
 import { getSlopLabel } from '@/lib/slopCalculator';
 import ShareButton from './ShareButton';
 
@@ -327,7 +329,13 @@ export default function ResultsPanel({ result, translationId, inputText, level }
           {/* Right column: Gauges */}
           <div className="lg:col-span-4 space-y-5">
             <SlopGauge slopIndex={result.slopIndex} />
+            <CommunityComparison score={result.slopIndex.score} />
             <HallucinationPanel hallucinations={result.hallucinations} />
+          </div>
+
+          {/* Full-width writing tips */}
+          <div className="lg:col-span-12">
+            <WritingTips breakdown={result.slopIndex.breakdown} score={result.slopIndex.score} />
           </div>
         </div>
       ) : (
@@ -363,6 +371,11 @@ export default function ResultsPanel({ result, translationId, inputText, level }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SlopGauge slopIndex={result.slopIndex} />
             <HallucinationPanel hallucinations={result.hallucinations} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CommunityComparison score={result.slopIndex.score} />
+            <WritingTips breakdown={result.slopIndex.breakdown} score={result.slopIndex.score} />
           </div>
         </div>
       )}

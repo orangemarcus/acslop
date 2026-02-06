@@ -149,6 +149,16 @@ export default function UserMenu() {
               Dashboard
             </a>
             <a
+              href="/leaderboard"
+              onClick={() => setOpen(false)}
+              className="w-full text-left px-3 py-2 text-xs text-warm-700 dark:text-warm-300 hover:bg-cream-50 dark:hover:bg-warm-700 rounded-lg flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Community leaderboard
+            </a>
+            <a
               href="/pricing"
               onClick={() => setOpen(false)}
               className="w-full text-left px-3 py-2 text-xs text-warm-700 dark:text-warm-300 hover:bg-cream-50 dark:hover:bg-warm-700 rounded-lg flex items-center gap-2"
