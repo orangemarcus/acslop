@@ -3,11 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { streamTranslateText, streamTranslateImage } from '@/lib/claude';
 import { calculateSlopIndex } from '@/lib/slopCalculator';
-import { checkQuota, logUsage } from '@/lib/quota';
+import { checkQuota, getUserPlan, logUsage } from '@/lib/quota';
+import { getPlan } from '@/lib/plans';
 import { TranslateResponse, PhraseMapping, HallucinationFlag, ComplexityLevel } from '@/types';
-
-const MAX_TEXT_LENGTH = 5000;
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 // In-memory burst protection (per-process, supplements DB quota)
 const burstLog: number[] = [];
@@ -54,14 +52,22 @@ export async function POST(request: NextRequest) {
   // Check quota (DB-backed, per-user or per-IP)
   const quota = await checkQuota(userId, ipAddress);
   if (!quota.allowed) {
+    const isFreeTier = quota.plan === 'free';
     const msg = userId
-      ? `Monthly limit reached (${quota.limit} translations). Resets in ${quota.resetsIn}.`
+      ? isFreeTier
+        ? `Monthly limit reached (${quota.limit} translations). Upgrade to Pro for 200/month, or wait ${quota.resetsIn}.`
+        : `Monthly limit reached (${quota.limit} translations). Resets in ${quota.resetsIn}.`
       : `Daily limit reached (${quota.limit} translations). Sign in for 25/month, or wait ${quota.resetsIn}.`;
     return new Response(
-      `event: error\ndata: ${JSON.stringify({ error: msg, quota: true })}\n\n`,
+      `event: error\ndata: ${JSON.stringify({ error: msg, quota: true, plan: quota.plan })}\n\n`,
       { status: 429, headers: { 'Content-Type': 'text/event-stream' } }
     );
   }
+
+  // Resolve plan-based limits
+  const userPlan = userId ? await getUserPlan(userId) : getPlan('free');
+  const MAX_TEXT_LENGTH = userPlan.maxTextLength;
+  const MAX_IMAGE_SIZE = userPlan.maxImageSize;
 
   let body;
   try {
@@ -90,15 +96,17 @@ export async function POST(request: NextRequest) {
   }
 
   if (text && text.length > MAX_TEXT_LENGTH) {
+    const upgradeHint = userPlan.slug === 'free' ? ' Upgrade to Pro for 15,000 characters.' : '';
     return new Response(
-      `event: error\ndata: ${JSON.stringify({ error: `Text too long. Maximum ${MAX_TEXT_LENGTH} characters.` })}\n\n`,
+      `event: error\ndata: ${JSON.stringify({ error: `Text too long. Maximum ${MAX_TEXT_LENGTH.toLocaleString()} characters.${upgradeHint}` })}\n\n`,
       { status: 400, headers: { 'Content-Type': 'text/event-stream' } }
     );
   }
 
   if (image && image.length > MAX_IMAGE_SIZE) {
+    const sizeMB = Math.round(MAX_IMAGE_SIZE / (1024 * 1024));
     return new Response(
-      `event: error\ndata: ${JSON.stringify({ error: 'Image too large. Maximum 5MB.' })}\n\n`,
+      `event: error\ndata: ${JSON.stringify({ error: `Image too large. Maximum ${sizeMB}MB.` })}\n\n`,
       { status: 400, headers: { 'Content-Type': 'text/event-stream' } }
     );
   }
@@ -119,7 +127,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // Send quota info so client can display it
-        send('quota', { used: quota.used + 1, limit: quota.limit, resetsIn: quota.resetsIn });
+        send('quota', { used: quota.used + 1, limit: quota.limit, resetsIn: quota.resetsIn, plan: quota.plan });
         send('status', { message: 'Connecting to Claude...' });
 
         let originalText: string;

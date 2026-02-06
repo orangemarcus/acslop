@@ -58,6 +58,7 @@ export default function UserMenu() {
   }
 
   const user = session.user;
+  const isPro = (user as { plan?: string }).plan === 'pro';
   const initials = (user.name || user.email || '?')
     .split(/[\s@]/)
     .slice(0, 2)
@@ -72,24 +73,43 @@ export default function UserMenu() {
         aria-label="User menu"
         aria-expanded={open}
       >
-        {user.image ? (
-          <img
-            src={user.image}
-            alt=""
-            className="w-7 h-7 rounded-full border border-cream-300 dark:border-warm-600"
-          />
-        ) : (
-          <div className="w-7 h-7 rounded-full bg-terracotta-500 text-white text-xs font-bold flex items-center justify-center">
-            {initials}
-          </div>
-        )}
+        <div className="relative">
+          {user.image ? (
+            <img
+              src={user.image}
+              alt=""
+              className="w-7 h-7 rounded-full border border-cream-300 dark:border-warm-600"
+            />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-terracotta-500 text-white text-xs font-bold flex items-center justify-center">
+              {initials}
+            </div>
+          )}
+          {isPro && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center">
+              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </span>
+          )}
+        </div>
       </button>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-warm-800 border border-cream-300 dark:border-warm-700 rounded-xl shadow-lg z-30 overflow-hidden view-enter">
           {/* User info */}
           <div className="px-4 py-3 border-b border-cream-200 dark:border-warm-700">
-            <p className="text-sm font-medium text-warm-900 dark:text-warm-100 truncate">{user.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-warm-900 dark:text-warm-100 truncate">{user.name}</p>
+              {isPro && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                  Pro
+                </span>
+              )}
+            </div>
             <p className="text-xs text-warm-500 dark:text-warm-400 truncate">{user.email}</p>
           </div>
 
@@ -127,6 +147,27 @@ export default function UserMenu() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               Dashboard
+            </a>
+            <a
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              className="w-full text-left px-3 py-2 text-xs text-warm-700 dark:text-warm-300 hover:bg-cream-50 dark:hover:bg-warm-700 rounded-lg flex items-center gap-2"
+            >
+              {isPro ? (
+                <>
+                  <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                  Manage subscription
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5 text-terracotta-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  <span className="text-terracotta-500 font-medium">Upgrade to Pro</span>
+                </>
+              )}
             </a>
             <button
               onClick={() => { signOut({ callbackUrl: '/' }); setOpen(false); }}

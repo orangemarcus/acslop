@@ -504,7 +504,10 @@ export default function Home() {
                   <span className="text-[11px] text-warm-500 dark:text-warm-400">
                     {quotaInfo.used} / {quotaInfo.limit} translations used
                     {!session?.user && (
-                      <> &mdash; <button onClick={() => { window.location.href = '/auth/signin'; }} className="text-terracotta-500 hover:text-terracotta-600 font-medium">Sign in</button> for {'\u00A0'}25/month</>
+                      <> &mdash; <button onClick={() => { window.location.href = '/auth/signin'; }} className="text-terracotta-500 hover:text-terracotta-600 font-medium">Sign in</button> for 25/month</>
+                    )}
+                    {session?.user && (session.user as { plan?: string }).plan !== 'pro' && quotaInfo.used > quotaInfo.limit * 0.6 && (
+                      <> &mdash; <a href="/pricing" className="text-terracotta-500 hover:text-terracotta-600 font-medium">Upgrade to Pro</a> for 200/month</>
                     )}
                   </span>
                 </div>
@@ -519,15 +522,33 @@ export default function Home() {
                   Translate
                   <kbd className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-terracotta-600 rounded">Ctrl+Enter</kbd>
                 </button>
-                <button
-                  onClick={() => setView('bulk')}
-                  className="text-xs text-warm-500 dark:text-warm-400 hover:text-terracotta-500 flex items-center gap-1.5"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Analyze a full paper (bulk mode)
-                </button>
+                {(session?.user as { plan?: string })?.plan === 'pro' ? (
+                  <button
+                    onClick={() => setView('bulk')}
+                    className="text-xs text-warm-500 dark:text-warm-400 hover:text-terracotta-500 flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Analyze a full paper (bulk mode)
+                  </button>
+                ) : (
+                  <a
+                    href="/pricing"
+                    className="text-xs text-warm-400 dark:text-warm-500 hover:text-terracotta-500 flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Bulk paper analysis
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                      <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                      Pro
+                    </span>
+                  </a>
+                )}
               </div>
             </div>
 

@@ -60,15 +60,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
+      }
+      // Refresh plan from DB on every sign-in and session update
+      if (token.id && (user || trigger === 'update')) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { plan: true },
+        });
+        token.plan = dbUser?.plan || 'free';
+      }
+      // Also set plan on initial jwt creation
+      if (token.id && !token.plan) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { plan: true },
+        });
+        token.plan = dbUser?.plan || 'free';
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
         (session.user as { id?: string }).id = token.id as string;
+        (session.user as { plan?: string }).plan = (token.plan as string) || 'free';
       }
       return session;
     },

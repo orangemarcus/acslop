@@ -1,14 +1,12 @@
 import { prisma } from './prisma';
-
-// Free tier: 5 translations/day for anonymous, 25/month for signed-in
-const ANON_DAILY_LIMIT = 5;
-const FREE_MONTHLY_LIMIT = 25;
+import { getPlan, ANON_DAILY_LIMIT } from './plans';
 
 export interface QuotaResult {
   allowed: boolean;
   used: number;
   limit: number;
   resetsIn: string; // human-readable
+  plan: string;
 }
 
 export async function checkQuota(
@@ -16,7 +14,16 @@ export async function checkQuota(
   ipAddress: string | null
 ): Promise<QuotaResult> {
   if (userId) {
-    // Authenticated: 25 translations per calendar month
+    // Fetch user plan
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
+
+    const plan = getPlan(user?.plan || 'free');
+    const limit = plan.translationsPerMonth;
+
+    // Count usage this calendar month
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -33,16 +40,17 @@ export async function checkQuota(
     const daysLeft = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
-      allowed: used < FREE_MONTHLY_LIMIT,
+      allowed: used < limit,
       used,
-      limit: FREE_MONTHLY_LIMIT,
+      limit,
       resetsIn: `${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+      plan: plan.slug,
     };
   }
 
   // Anonymous: 5 translations per day by IP
   if (!ipAddress) {
-    return { allowed: false, used: 0, limit: ANON_DAILY_LIMIT, resetsIn: 'unknown' };
+    return { allowed: false, used: 0, limit: ANON_DAILY_LIMIT, resetsIn: 'unknown', plan: 'anonymous' };
   }
 
   const dayStart = new Date();
@@ -67,7 +75,17 @@ export async function checkQuota(
     used,
     limit: ANON_DAILY_LIMIT,
     resetsIn: `${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`,
+    plan: 'anonymous',
   };
+}
+
+/** Get the user's plan config for feature gating */
+export async function getUserPlan(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { plan: true },
+  });
+  return getPlan(user?.plan || 'free');
 }
 
 export async function logUsage(params: {
