@@ -11,6 +11,7 @@ import ExampleBrowser from '@/components/ExampleBrowser';
 import OnboardingTour from '@/components/OnboardingTour';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import BulkAnalysis from '@/components/BulkAnalysis';
+import AchievementToast from '@/components/AchievementToast';
 import UserMenu from '@/components/UserMenu';
 import { useSession } from 'next-auth/react';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
@@ -56,6 +57,7 @@ export default function Home() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState<{ used: number; limit: number; resetsIn: string } | null>(null);
   const [lastTranslationId, setLastTranslationId] = useState<string | null>(null);
+  const [newAchievement, setNewAchievement] = useState<{ id: string; name: string; description: string; icon: string; color: string } | null>(null);
 
   // '?' key to open keyboard shortcuts help
   useEffect(() => {
@@ -293,6 +295,17 @@ export default function Home() {
         addHistoryEntry(inputText, level, data);
         refreshHistory();
         saveToCloud(inputText, level, data);
+        // Check for new achievements after translation
+        if (session?.user) {
+          fetch('/api/achievements', { method: 'POST' })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.newlyUnlocked?.length > 0) {
+                setNewAchievement(d.newlyUnlocked[0]);
+              }
+            })
+            .catch(() => {});
+        }
       }
     );
   };
@@ -638,6 +651,12 @@ export default function Home() {
 
       {/* Onboarding Tour (first visit only) */}
       {view === 'input' && !loading && <OnboardingTour />}
+
+      {/* Achievement toast */}
+      <AchievementToast
+        achievement={newAchievement}
+        onDismiss={() => setNewAchievement(null)}
+      />
     </div>
   );
 }

@@ -104,10 +104,22 @@ function LevelPieChart({ counts }: { counts: Record<number, number> }) {
   );
 }
 
+interface AchievementInfo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [achievements, setAchievements] = useState<AchievementInfo[]>([]);
+  const [achievementStats, setAchievementStats] = useState({ unlocked: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,6 +136,13 @@ export default function DashboardPage() {
           setLoading(false);
         })
         .catch(() => setLoading(false));
+      fetch('/api/achievements')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.achievements) setAchievements(d.achievements);
+          setAchievementStats({ unlocked: d.unlocked || 0, total: d.total || 0 });
+        })
+        .catch(() => {});
     }
   }, [status, router]);
 
@@ -240,6 +259,60 @@ export default function DashboardPage() {
             <LevelPieChart counts={levelCounts} />
           </div>
         </div>
+
+        {/* Achievements */}
+        {achievements.length > 0 && (
+          <div className="bg-white dark:bg-warm-800 rounded-2xl border border-cream-300 dark:border-warm-700 p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-warm-800 dark:text-warm-200 flex items-center gap-2">
+                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                Achievements
+              </h3>
+              <span className="text-xs text-warm-500 dark:text-warm-400">
+                {achievementStats.unlocked} / {achievementStats.total} unlocked
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {achievements.map((a) => {
+                const colorMap: Record<string, string> = {
+                  blue: '#3b82f6', emerald: '#10b981', purple: '#8b5cf6', amber: '#f59e0b',
+                  cyan: '#06b6d4', red: '#ef4444', pink: '#ec4899', indigo: '#6366f1',
+                  orange: '#f97316', violet: '#7c3aed',
+                };
+                const hex = colorMap[a.color] || '#C96442';
+                return (
+                  <div
+                    key={a.id}
+                    className={`text-center p-3 rounded-xl border transition-all ${
+                      a.unlocked
+                        ? 'bg-cream-50 dark:bg-warm-750 border-cream-300 dark:border-warm-600'
+                        : 'bg-cream-50/50 dark:bg-warm-800 border-cream-200 dark:border-warm-700 opacity-40'
+                    }`}
+                    title={`${a.name}: ${a.description}${a.unlockedAt ? ` (Unlocked ${new Date(a.unlockedAt).toLocaleDateString()})` : ' (Locked)'}`}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full mx-auto mb-1.5 flex items-center justify-center"
+                      style={{ backgroundColor: a.unlocked ? hex + '20' : '#9ca3af20' }}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke={a.unlocked ? hex : '#9ca3af'}
+                        strokeWidth={1.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                      </svg>
+                    </div>
+                    <p className="text-[10px] font-medium text-warm-700 dark:text-warm-300 truncate">{a.name}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Recent translations */}
         <div className="bg-white dark:bg-warm-800 rounded-2xl border border-cream-300 dark:border-warm-700 shadow-soft overflow-hidden">

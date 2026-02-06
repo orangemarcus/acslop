@@ -28,6 +28,9 @@ model User {
   sharedReports ShareableReport[]
   subscription  Subscription?
   apiKeys       ApiKey[]
+  feedback      Feedback[]
+  collections   Collection[]
+  achievements  UserAchievement[]
 }
 
 model Account {
@@ -77,8 +80,10 @@ model Translation {
   slopScore   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shares ShareableReport[]
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares    ShareableReport[]
+  feedback  Feedback[]
+  bookmarks Bookmark[]
 
   @@index([userId, createdAt])
 }
@@ -116,6 +121,67 @@ model UsageLog {
 
   @@index([userId, createdAt])
   @@index([ipAddress, createdAt])
+}
+
+// ─── Feedback ────────────────────────────────────────
+
+model Feedback {
+  id            String   @id @default(cuid())
+  userId        String
+  translationId String
+  rating        Int      // 1 = thumbs down, 2 = thumbs up
+  comment       String?  // optional written feedback
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translation Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, translationId])
+  @@index([translationId])
+}
+
+// ─── Collections & Bookmarks ─────────────────────────
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#C96442") // theme color
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
+
+  @@index([userId])
+}
+
+model Bookmark {
+  id            String   @id @default(cuid())
+  collectionId  String
+  translationId String
+  note          String?
+  createdAt     DateTime @default(now())
+
+  collection  Collection  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  translation Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, translationId])
+  @@index([translationId])
+}
+
+// ─── Achievements ────────────────────────────────────
+
+model UserAchievement {
+  id           String   @id @default(cuid())
+  userId       String
+  achievementId String  // slug like "first_translation", "slop_slayer"
+  unlockedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
 }
 
 // ─── API Keys ────────────────────────────────────────

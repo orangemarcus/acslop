@@ -8,6 +8,9 @@ import HoverDefinition from './HoverDefinition';
 import HallucinationPanel from './HallucinationPanel';
 import WritingTips from './WritingTips';
 import CommunityComparison from './CommunityComparison';
+import FeedbackButtons from './FeedbackButtons';
+import BookmarkButton from './BookmarkButton';
+import FieldDetector from './FieldDetector';
 import { getSlopLabel } from '@/lib/slopCalculator';
 import ShareButton from './ShareButton';
 
@@ -247,10 +250,16 @@ export default function ResultsPanel({ result, translationId, inputText, level }
 
   return (
     <div className="space-y-6">
-      {/* Core Claim */}
-      <ClaimCard claim={result.coreClaim} />
+      {/* Core Claim + Field Detection */}
+      <div className="space-y-3">
+        <ClaimCard claim={result.coreClaim} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <FieldDetector text={result.original} />
+          <FeedbackButtons translationId={translationId} />
+        </div>
+      </div>
 
-      {/* Toolbar: layout toggle + share + export */}
+      {/* Toolbar: layout toggle + bookmark + share + export */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 bg-cream-200 dark:bg-warm-700 rounded-lg p-0.5">
           <button
@@ -285,6 +294,7 @@ export default function ResultsPanel({ result, translationId, inputText, level }
           </button>
         </div>
         <div className="flex items-center gap-1">
+          <BookmarkButton translationId={translationId} />
           <ShareButton
             translationId={translationId || null}
             inputText={inputText || result.original}

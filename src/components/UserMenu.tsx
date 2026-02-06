@@ -149,6 +149,16 @@ export default function UserMenu() {
               Dashboard
             </a>
             <a
+              href="/collections"
+              onClick={() => setOpen(false)}
+              className="w-full text-left px-3 py-2 text-xs text-warm-700 dark:text-warm-300 hover:bg-cream-50 dark:hover:bg-warm-700 rounded-lg flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              Collections
+            </a>
+            <a
               href="/leaderboard"
               onClick={() => setOpen(false)}
               className="w-full text-left px-3 py-2 text-xs text-warm-700 dark:text-warm-300 hover:bg-cream-50 dark:hover:bg-warm-700 rounded-lg flex items-center gap-2"
