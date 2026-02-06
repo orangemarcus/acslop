@@ -10,12 +10,13 @@ import StreamingPreview from '@/components/StreamingPreview';
 import ExampleBrowser from '@/components/ExampleBrowser';
 import OnboardingTour from '@/components/OnboardingTour';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
+import BulkAnalysis from '@/components/BulkAnalysis';
 import UserMenu from '@/components/UserMenu';
 import { useSession } from 'next-auth/react';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
 import { getHistory, addHistoryEntry } from '@/lib/history';
 
-type View = 'input' | 'results';
+type View = 'input' | 'results' | 'bulk';
 
 const INPUT_STORAGE_KEY = 'acslop_draft';
 
@@ -54,6 +55,7 @@ export default function Home() {
   const abortRef = useRef<AbortController | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState<{ used: number; limit: number; resetsIn: string } | null>(null);
+  const [lastTranslationId, setLastTranslationId] = useState<string | null>(null);
 
   // '?' key to open keyboard shortcuts help
   useEffect(() => {
@@ -153,11 +155,15 @@ export default function Home() {
   const saveToCloud = useCallback(async (inputText: string, lvl: number, translationResult: TranslateResponse) => {
     if (!session?.user) return;
     try {
-      await fetch('/api/translations', {
+      const res = await fetch('/api/translations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inputText, level: lvl, result: translationResult }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.id) setLastTranslationId(data.id);
+      }
     } catch {
       // Silent fail — local history is the fallback
     }
@@ -296,6 +302,7 @@ export default function Home() {
     setImage(null);
     setResult(null);
     setError(null);
+    setLastTranslationId(null);
     setView('input');
   };
 
@@ -503,7 +510,7 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="flex justify-center" data-tour="translate-btn">
+              <div className="flex flex-col items-center gap-3" data-tour="translate-btn">
                 <button
                   onClick={handleTranslate}
                   disabled={loading || (!text && !image)}
@@ -512,11 +519,24 @@ export default function Home() {
                   Translate
                   <kbd className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-terracotta-600 rounded">Ctrl+Enter</kbd>
                 </button>
+                <button
+                  onClick={() => setView('bulk')}
+                  className="text-xs text-warm-500 dark:text-warm-400 hover:text-terracotta-500 flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Analyze a full paper (bulk mode)
+                </button>
               </div>
             </div>
 
             {/* Examples */}
             <ExampleBrowser onSelect={setText} disabled={loading} />
+          </div>
+        ) : view === 'bulk' ? (
+          <div key="bulk" className="view-enter">
+            <BulkAnalysis level={level} onClose={() => setView('input')} />
           </div>
         ) : (
           <div key="results" className="space-y-4 view-enter">
@@ -540,7 +560,14 @@ export default function Home() {
               </div>
             )}
 
-            {result && <ResultsPanel result={result} />}
+            {result && (
+              <ResultsPanel
+                result={result}
+                translationId={lastTranslationId}
+                inputText={text}
+                level={level}
+              />
+            )}
           </div>
         )}
       </main>

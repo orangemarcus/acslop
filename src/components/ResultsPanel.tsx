@@ -7,9 +7,13 @@ import ClaimCard from './ClaimCard';
 import HoverDefinition from './HoverDefinition';
 import HallucinationPanel from './HallucinationPanel';
 import { getSlopLabel } from '@/lib/slopCalculator';
+import ShareButton from './ShareButton';
 
 interface ResultsPanelProps {
   result: TranslateResponse;
+  translationId?: string | null;
+  inputText?: string;
+  level?: number;
 }
 
 type ResultsLayout = 'stacked' | 'sideBySide';
@@ -236,7 +240,7 @@ function ExportMenu({ result }: { result: TranslateResponse }) {
   );
 }
 
-export default function ResultsPanel({ result }: ResultsPanelProps) {
+export default function ResultsPanel({ result, translationId, inputText, level }: ResultsPanelProps) {
   const [layout, setLayout] = useState<ResultsLayout>('stacked');
 
   return (
@@ -244,7 +248,7 @@ export default function ResultsPanel({ result }: ResultsPanelProps) {
       {/* Core Claim */}
       <ClaimCard claim={result.coreClaim} />
 
-      {/* Toolbar: layout toggle + export */}
+      {/* Toolbar: layout toggle + share + export */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 bg-cream-200 dark:bg-warm-700 rounded-lg p-0.5">
           <button
@@ -278,7 +282,15 @@ export default function ResultsPanel({ result }: ResultsPanelProps) {
             </svg>
           </button>
         </div>
-        <ExportMenu result={result} />
+        <div className="flex items-center gap-1">
+          <ShareButton
+            translationId={translationId || null}
+            inputText={inputText || result.original}
+            level={level || 4}
+            result={result}
+          />
+          <ExportMenu result={result} />
+        </div>
       </div>
 
       {/* Main content grid */}

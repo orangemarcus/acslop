@@ -22,6 +22,7 @@ model User {
   sessions      Session[]
   translations  Translation[]
   usageLogs     UsageLog[]
+  sharedReports ShareableReport[]
 }
 
 model Account {
@@ -71,8 +72,25 @@ model Translation {
   slopScore   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares ShareableReport[]
 
+  @@index([userId, createdAt])
+}
+
+model ShareableReport {
+  id            String   @id @default(cuid())
+  shareId       String   @unique // Short unique URL slug
+  translationId String
+  userId        String
+  title         String?  // Optional custom title
+  views         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  translation Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
   @@index([userId, createdAt])
 }
 
