@@ -88,6 +88,93 @@ export async function translateText(
   }
 }
 
+export async function streamTranslateText(
+  text: string,
+  level: ComplexityLevel = 4,
+  onDelta: (chunk: string) => void,
+  signal?: AbortSignal
+): Promise<ClaudeAnalysis> {
+  const stream = anthropic.messages.stream(
+    {
+      model: MODEL,
+      max_tokens: 4096,
+      system: getSystemPrompt(level),
+      messages: [
+        {
+          role: 'user',
+          content: buildTranslationPrompt(text, level),
+        },
+      ],
+    },
+    { signal }
+  );
+
+  let fullText = '';
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      fullText += event.delta.text;
+      onDelta(event.delta.text);
+    }
+  }
+
+  const jsonStr = extractJSON(fullText);
+  const parsed = JSON.parse(jsonStr);
+  return parseAnalysis(parsed);
+}
+
+export async function streamTranslateImage(
+  base64Image: string,
+  level: ComplexityLevel = 4,
+  mediaType: ImageMediaType = 'image/png',
+  onDelta: (chunk: string) => void,
+  signal?: AbortSignal
+): Promise<{ extractedText: string; analysis: ClaudeAnalysis }> {
+  const stream = anthropic.messages.stream(
+    {
+      model: MODEL,
+      max_tokens: 4096,
+      system: getSystemPrompt(level),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: mediaType,
+                data: base64Image,
+              },
+            },
+            {
+              type: 'text',
+              text: buildImagePrompt(level),
+            },
+          ],
+        },
+      ],
+    },
+    { signal }
+  );
+
+  let fullText = '';
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      fullText += event.delta.text;
+      onDelta(event.delta.text);
+    }
+  }
+
+  const jsonStr = extractJSON(fullText);
+  const parsed = JSON.parse(jsonStr);
+  const extractedText = typeof parsed.extractedText === 'string' ? parsed.extractedText : '';
+
+  return {
+    extractedText,
+    analysis: parseAnalysis(parsed),
+  };
+}
+
 export async function translateImage(
   base64Image: string,
   level: ComplexityLevel = 4,

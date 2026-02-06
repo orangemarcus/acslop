@@ -6,12 +6,29 @@ import ImageUpload from '@/components/ImageUpload';
 import LevelSelector from '@/components/LevelSelector';
 import ResultsPanel from '@/components/ResultsPanel';
 import HistoryDrawer from '@/components/HistoryDrawer';
+import StreamingPreview from '@/components/StreamingPreview';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
 import { getHistory, addHistoryEntry } from '@/lib/history';
 
 type View = 'input' | 'results';
 
 const INPUT_STORAGE_KEY = 'acslop_draft';
+
+function parseSSE(chunk: string): Array<{ event: string; data: string }> {
+  const events: Array<{ event: string; data: string }> = [];
+  const blocks = chunk.split('\n\n').filter(Boolean);
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    let event = '';
+    let data = '';
+    for (const line of lines) {
+      if (line.startsWith('event: ')) event = line.slice(7);
+      else if (line.startsWith('data: ')) data = line.slice(6);
+    }
+    if (event && data) events.push({ event, data });
+  }
+  return events;
+}
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -27,6 +44,8 @@ export default function Home() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [streamStatus, setStreamStatus] = useState<string>('');
+  const abortRef = useRef<AbortController | null>(null);
 
   // Load history on mount
   useEffect(() => {
@@ -108,45 +127,128 @@ export default function Home() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [text, image, loading, view]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const streamTranslation = async (
+    requestBody: Record<string, unknown>,
+    onComplete: (data: TranslateResponse) => void
+  ) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    setError(null);
+    setStreamStatus('Connecting...');
+
+    try {
+      const response = await fetch('/api/translate/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      if (!response.ok || !response.body) {
+        const text = await response.text();
+        const events = parseSSE(text);
+        const errorEvent = events.find(e => e.event === 'error');
+        if (errorEvent) {
+          throw new Error(JSON.parse(errorEvent.data).error);
+        }
+        throw new Error('Translation failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lastDoubleNewline = buffer.lastIndexOf('\n\n');
+        if (lastDoubleNewline === -1) continue;
+
+        const complete = buffer.slice(0, lastDoubleNewline + 2);
+        buffer = buffer.slice(lastDoubleNewline + 2);
+
+        const events = parseSSE(complete);
+        for (const evt of events) {
+          try {
+            const data = JSON.parse(evt.data);
+            switch (evt.event) {
+              case 'status':
+                setStreamStatus(data.message);
+                break;
+              case 'done':
+                onComplete(data as TranslateResponse);
+                return;
+              case 'error':
+                throw new Error(data.error || 'Translation failed');
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message !== 'Translation failed' && e.message !== 'Unexpected end of JSON input') {
+              throw e;
+            }
+          }
+        }
+      }
+
+      if (buffer.trim()) {
+        const events = parseSSE(buffer);
+        for (const evt of events) {
+          const data = JSON.parse(evt.data);
+          if (evt.event === 'done') {
+            onComplete(data as TranslateResponse);
+            return;
+          }
+          if (evt.event === 'error') {
+            throw new Error(data.error || 'Translation failed');
+          }
+        }
+      }
+
+      throw new Error('Stream ended without result');
+    } catch (err) {
+      if (controller.signal.aborted) {
+        setStreamStatus('');
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+    } finally {
+      setLoading(false);
+      setStreamStatus('');
+      abortRef.current = null;
+    }
+  };
+
+  const handleCancel = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+  };
+
   const handleTranslate = async () => {
     if (!text && !image) {
       setError('Please enter some text or upload an image');
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: text || undefined,
-          image: image || undefined,
-          imageMediaType: image ? imageMediaType : undefined,
-          level,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Translation failed');
+    await streamTranslation(
+      {
+        text: text || undefined,
+        image: image || undefined,
+        imageMediaType: image ? imageMediaType : undefined,
+        level,
+      },
+      (data) => {
+        setResult(data);
+        setView('results');
+        const inputText = text || data.original;
+        addHistoryEntry(inputText, level, data);
+        refreshHistory();
       }
-
-      const data: TranslateResponse = await response.json();
-      setResult(data);
-      setView('results');
-
-      // Save to history
-      const inputText = text || data.original;
-      addHistoryEntry(inputText, level, data);
-      refreshHistory();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleClear = () => {
@@ -159,38 +261,21 @@ export default function Home() {
 
   const handleRetranslate = async (newLevel: ComplexityLevel) => {
     setLevel(newLevel);
-    setLoading(true);
-    setError(null);
 
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: text || undefined,
-          image: image || undefined,
-          imageMediaType: image ? imageMediaType : undefined,
-          level: newLevel,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Translation failed');
+    await streamTranslation(
+      {
+        text: text || undefined,
+        image: image || undefined,
+        imageMediaType: image ? imageMediaType : undefined,
+        level: newLevel,
+      },
+      (data) => {
+        setResult(data);
+        const inputText = text || data.original;
+        addHistoryEntry(inputText, newLevel, data);
+        refreshHistory();
       }
-
-      const data: TranslateResponse = await response.json();
-      setResult(data);
-
-      // Save re-translation to history too
-      const inputText = text || data.original;
-      addHistoryEntry(inputText, newLevel, data);
-      refreshHistory();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleHistorySelect = (entry: HistoryEntry) => {
@@ -301,7 +386,9 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10" aria-live="polite">
-        {view === 'input' ? (
+        {loading && streamStatus ? (
+          <StreamingPreview status={streamStatus} onCancel={handleCancel} />
+        ) : view === 'input' ? (
           <div key="input" className="space-y-8 view-enter">
             {/* Welcome */}
             <div className="text-center max-w-lg mx-auto">
@@ -352,20 +439,8 @@ export default function Home() {
                   disabled={loading || (!text && !image)}
                   className="px-6 py-2.5 bg-terracotta-500 text-white font-medium rounded-xl hover:bg-terracotta-600 disabled:bg-cream-300 dark:disabled:bg-warm-700 disabled:text-cream-400 dark:disabled:text-warm-500 disabled:cursor-not-allowed flex items-center gap-2 shadow-soft"
                 >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Analyzing{elapsed > 0 ? ` (${elapsed}s)` : '...'}
-                    </>
-                  ) : (
-                    <>
-                      Translate
-                      <kbd className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-terracotta-600 rounded">Ctrl+Enter</kbd>
-                    </>
-                  )}
+                  Translate
+                  <kbd className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-terracotta-600 rounded">Ctrl+Enter</kbd>
                 </button>
               </div>
             </div>
@@ -406,15 +481,6 @@ export default function Home() {
             {/* Level selector bar on results page */}
             <div className="bg-white dark:bg-warm-800 rounded-xl border border-cream-300 dark:border-warm-700 p-4 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 no-print">
               <LevelSelector level={level} onChange={handleRetranslate} disabled={loading} compact />
-              {loading && (
-                <div className="flex items-center gap-2 text-sm text-warm-600 dark:text-warm-400">
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Re-translating{elapsed > 0 ? ` (${elapsed}s)` : '...'}
-                </div>
-              )}
             </div>
 
             {error && (

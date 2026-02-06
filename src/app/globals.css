@@ -67,6 +67,17 @@ body {
   }
 }
 
+/* Streaming progress bar */
+.streaming-progress {
+  animation: streamProgress 2.5s ease-in-out infinite;
+}
+
+@keyframes streamProgress {
+  0% { width: 5%; }
+  50% { width: 70%; }
+  100% { width: 5%; }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
