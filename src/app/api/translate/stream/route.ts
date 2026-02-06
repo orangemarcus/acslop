@@ -5,6 +5,7 @@ import { streamTranslateText, streamTranslateImage } from '@/lib/claude';
 import { calculateSlopIndex } from '@/lib/slopCalculator';
 import { checkQuota, getUserPlan, logUsage } from '@/lib/quota';
 import { getPlan } from '@/lib/plans';
+import { getCachedTranslation, cacheTranslation } from '@/lib/cache';
 import { TranslateResponse, PhraseMapping, HallucinationFlag, ComplexityLevel } from '@/types';
 
 // In-memory burst protection (per-process, supplements DB quota)
@@ -128,6 +129,18 @@ export async function POST(request: NextRequest) {
       try {
         // Send quota info so client can display it
         send('quota', { used: quota.used + 1, limit: quota.limit, resetsIn: quota.resetsIn, plan: quota.plan });
+
+        // Check cache for text-only requests (images are never cached)
+        if (text && !image) {
+          const cached = await getCachedTranslation(text, level);
+          if (cached) {
+            send('status', { message: 'Loaded from cache' });
+            send('done', cached);
+            controller.close();
+            return;
+          }
+        }
+
         send('status', { message: 'Connecting to Claude...' });
 
         let originalText: string;
@@ -217,6 +230,11 @@ export async function POST(request: NextRequest) {
         };
 
         send('done', response);
+
+        // Cache text-only translations (fire-and-forget)
+        if (!image) {
+          cacheTranslation(originalText, level, response).catch(() => {});
+        }
 
         // Log successful usage
         await logUsage({

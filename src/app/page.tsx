@@ -606,6 +606,12 @@ export default function Home() {
             >
               Leaderboard
             </a>
+            <a
+              href="/docs/api"
+              className="hover:text-warm-700 dark:hover:text-warm-300"
+            >
+              API
+            </a>
             <button
               onClick={() => setShortcutsOpen(true)}
               className="hover:text-warm-700 dark:hover:text-warm-300 hidden sm:inline"

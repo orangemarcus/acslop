@@ -18,6 +18,7 @@ model User {
   password         String?
   plan             String    @default("free") // "free" | "pro"
   stripeCustomerId String?   @unique
+  isAdmin          Boolean   @default(false)
   createdAt        DateTime  @default(now())
 
   accounts      Account[]
@@ -26,6 +27,7 @@ model User {
   usageLogs     UsageLog[]
   sharedReports ShareableReport[]
   subscription  Subscription?
+  apiKeys       ApiKey[]
 }
 
 model Account {
@@ -114,6 +116,41 @@ model UsageLog {
 
   @@index([userId, createdAt])
   @@index([ipAddress, createdAt])
+}
+
+// ─── API Keys ────────────────────────────────────────
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // user-assigned label e.g. "My App"
+  key       String   @unique // "acslop_..." hashed prefix + random
+  prefix    String   // first 8 chars for display e.g. "acslop_a1b2..."
+  lastUsed  DateTime?
+  requests  Int      @default(0) // lifetime request count
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
+}
+
+// ─── Translation Cache ───────────────────────────────
+
+model TranslationCache {
+  id        String   @id @default(cuid())
+  inputHash String   @unique // SHA-256 of normalized input + level
+  inputText String
+  level     Int
+  result    String   // JSON blob of TranslateResponse
+  slopScore Int
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([inputHash])
 }
 
 // ─── Billing ────────────────────────────────────────
