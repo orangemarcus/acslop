@@ -8,6 +8,8 @@ import ResultsPanel from '@/components/ResultsPanel';
 import HistoryDrawer from '@/components/HistoryDrawer';
 import StreamingPreview from '@/components/StreamingPreview';
 import ExampleBrowser from '@/components/ExampleBrowser';
+import OnboardingTour from '@/components/OnboardingTour';
+import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
 import { getHistory, addHistoryEntry } from '@/lib/history';
 
@@ -47,6 +49,21 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [streamStatus, setStreamStatus] = useState<string>('');
   const abortRef = useRef<AbortController | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // '?' key to open keyboard shortcuts help
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        setShortcutsOpen(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   // Load history on mount
   useEffect(() => {
@@ -352,6 +369,18 @@ export default function Home() {
                 )}
               </button>
 
+              {/* Keyboard shortcuts */}
+              <button
+                onClick={() => setShortcutsOpen(true)}
+                className="hidden sm:flex p-2 rounded-lg text-warm-600 dark:text-warm-400 hover:bg-cream-200 dark:hover:bg-warm-700"
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts (?)"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 14h2m-2-4h2m4 4h2m-2-4h2m4 4h2m-2-4h2M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                </svg>
+              </button>
+
               {/* Dark mode toggle */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
@@ -403,11 +432,13 @@ export default function Home() {
             <div className="bg-white dark:bg-warm-800 rounded-2xl border border-cream-300 dark:border-warm-700 p-6 shadow-soft">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <TextInput onTextChange={setText} disabled={loading} initialValue={text} />
-                <ImageUpload onImageSelect={(base64, mediaType) => { setImage(base64); if (mediaType) setImageMediaType(mediaType); }} disabled={loading} />
+                <div data-tour="image-upload">
+                  <ImageUpload onImageSelect={(base64, mediaType) => { setImage(base64); if (mediaType) setImageMediaType(mediaType); }} disabled={loading} />
+                </div>
               </div>
 
               {/* Level selector */}
-              <div className="mb-6">
+              <div className="mb-6" data-tour="level-selector">
                 <LevelSelector level={level} onChange={setLevel} disabled={loading} />
               </div>
 
@@ -434,7 +465,7 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="flex justify-center">
+              <div className="flex justify-center" data-tour="translate-btn">
                 <button
                   onClick={handleTranslate}
                   disabled={loading || (!text && !image)}
@@ -476,6 +507,25 @@ export default function Home() {
         )}
       </main>
 
+      {/* Footer */}
+      <footer className="max-w-5xl mx-auto px-6 py-6 mt-4 border-t border-cream-200 dark:border-warm-800 no-print">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-warm-500 dark:text-warm-500">
+          <p>
+            Academic Slop Translator &mdash; Powered by Claude
+          </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShortcutsOpen(true)}
+              className="hover:text-warm-700 dark:hover:text-warm-300 hidden sm:inline"
+            >
+              Keyboard shortcuts
+              <kbd className="ml-1 px-1 py-0.5 text-[9px] font-mono bg-cream-100 dark:bg-warm-700 border border-cream-300 dark:border-warm-600 rounded">?</kbd>
+            </button>
+            <span className="text-warm-400 dark:text-warm-600">v1.0</span>
+          </div>
+        </div>
+      </footer>
+
       {/* History Drawer */}
       <HistoryDrawer
         open={historyOpen}
@@ -484,6 +534,12 @@ export default function Home() {
         onSelect={handleHistorySelect}
         onHistoryChange={refreshHistory}
       />
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {/* Onboarding Tour (first visit only) */}
+      {view === 'input' && !loading && <OnboardingTour />}
     </div>
   );
 }
