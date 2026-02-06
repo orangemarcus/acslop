@@ -84,3 +84,28 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  header, .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .shadow-soft, .shadow-lg {
+    box-shadow: none !important;
+  }
+  .rounded-2xl, .rounded-xl {
+    border-radius: 4px !important;
+  }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

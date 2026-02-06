@@ -404,7 +404,7 @@ export default function Home() {
         ) : (
           <div key="results" className="space-y-4 view-enter">
             {/* Level selector bar on results page */}
-            <div className="bg-white dark:bg-warm-800 rounded-xl border border-cream-300 dark:border-warm-700 p-4 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="bg-white dark:bg-warm-800 rounded-xl border border-cream-300 dark:border-warm-700 p-4 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 no-print">
               <LevelSelector level={level} onChange={handleRetranslate} disabled={loading} compact />
               {loading && (
                 <div className="flex items-center gap-2 text-sm text-warm-600 dark:text-warm-400">
