@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
     // Type validation
     const text = typeof body.text === 'string' ? body.text.trim() : '';
     const image = typeof body.image === 'string' ? body.image : '';
+    const VALID_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    const imageMediaType = typeof body.imageMediaType === 'string' && VALID_IMAGE_TYPES.has(body.imageMediaType)
+      ? body.imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+      : 'image/png';
     const rawLevel = typeof body.level === 'number' ? body.level : 4;
     const level = Math.min(5, Math.max(1, Math.round(rawLevel))) as ComplexityLevel;
 
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
     let analysis;
 
     if (image) {
-      const result = await translateImage(image, level);
+      const result = await translateImage(image, level, imageMediaType);
       originalText = result.extractedText;
       analysis = result.analysis;
     } else {

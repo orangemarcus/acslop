@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface ImageUploadProps {
-  onImageSelect: (base64: string | null) => void;
+  onImageSelect: (base64: string | null, mediaType?: string) => void;
   disabled?: boolean;
 }
 
@@ -23,15 +23,22 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
       const result = e.target?.result as string;
       setPreview(result);
       const base64 = result.split(',')[1];
-      onImageSelect(base64);
+      onImageSelect(base64, file.type);
     };
     reader.readAsDataURL(file);
   }, [onImageSelect]);
 
   // Handle paste from clipboard (Ctrl+V / Cmd+V)
+  // Only intercept image pastes when focus is NOT inside a text input/textarea
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       if (disabled) return;
+
+      // Don't intercept paste when user is typing in a text field
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
+        return;
+      }
 
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -46,7 +53,6 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
       }
     };
 
-    // Listen on document for global paste
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
   }, [disabled, processFile]);
@@ -76,7 +82,7 @@ export default function ImageUpload({ onImageSelect, disabled }: ImageUploadProp
 
   const handleClear = () => {
     setPreview(null);
-    onImageSelect(null);
+    onImageSelect(null, undefined);
   };
 
   return (

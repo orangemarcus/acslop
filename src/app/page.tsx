@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TextInput from '@/components/TextInput';
 import ImageUpload from '@/components/ImageUpload';
 import LevelSelector from '@/components/LevelSelector';
@@ -12,12 +12,15 @@ type View = 'input' | 'results';
 export default function Home() {
   const [text, setText] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [imageMediaType, setImageMediaType] = useState<string>('image/png');
   const [level, setLevel] = useState<ComplexityLevel>(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TranslateResponse | null>(null);
   const [view, setView] = useState<View>('input');
   const [darkMode, setDarkMode] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize dark mode from system preference or localStorage
   useEffect(() => {
@@ -39,6 +42,34 @@ export default function Home() {
     localStorage.setItem('darkMode', String(darkMode));
   }, [darkMode]);
 
+  // Track elapsed time during loading
+  useEffect(() => {
+    if (loading) {
+      setElapsed(0);
+      timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [loading]);
+
+  // Ctrl+Enter / Cmd+Enter keyboard shortcut to translate
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !loading && (text || image) && view === 'input') {
+        e.preventDefault();
+        handleTranslate();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [text, image, loading, view]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleTranslate = async () => {
     if (!text && !image) {
       setError('Please enter some text or upload an image');
@@ -55,6 +86,7 @@ export default function Home() {
         body: JSON.stringify({
           text: text || undefined,
           image: image || undefined,
+          imageMediaType: image ? imageMediaType : undefined,
           level,
         }),
       });
@@ -94,6 +126,7 @@ export default function Home() {
         body: JSON.stringify({
           text: text || undefined,
           image: image || undefined,
+          imageMediaType: image ? imageMediaType : undefined,
           level: newLevel,
         }),
       });
@@ -135,6 +168,7 @@ export default function Home() {
               <div className="flex items-center gap-1 bg-cream-200 dark:bg-warm-700 rounded-lg p-1">
                 <button
                   onClick={() => setView('input')}
+                  aria-pressed={view === 'input'}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                     view === 'input'
                       ? 'bg-white dark:bg-warm-600 text-warm-900 dark:text-warm-100 shadow-soft'
@@ -145,6 +179,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setView('results')}
+                  aria-pressed={view === 'results'}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                     view === 'results'
                       ? 'bg-white dark:bg-warm-600 text-warm-900 dark:text-warm-100 shadow-soft'
@@ -177,6 +212,7 @@ export default function Home() {
               {result && (
                 <button
                   onClick={handleClear}
+                  aria-label="Start new translation"
                   className="text-sm text-warm-600 dark:text-warm-400 hover:text-warm-900 dark:hover:text-warm-200 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-cream-200 dark:hover:bg-warm-700"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,9 +226,9 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10" aria-live="polite">
         {view === 'input' ? (
-          <div className="space-y-8">
+          <div key="input" className="space-y-8 view-enter">
             {/* Welcome */}
             <div className="text-center max-w-lg mx-auto">
               <h2 className="text-2xl font-serif text-warm-900 dark:text-warm-100 mb-2">What would you like to understand?</h2>
@@ -205,7 +241,7 @@ export default function Home() {
             <div className="bg-white dark:bg-warm-800 rounded-2xl border border-cream-300 dark:border-warm-700 p-6 shadow-soft">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <TextInput onTextChange={setText} disabled={loading} initialValue={text} />
-                <ImageUpload onImageSelect={setImage} disabled={loading} />
+                <ImageUpload onImageSelect={(base64, mediaType) => { setImage(base64); if (mediaType) setImageMediaType(mediaType); }} disabled={loading} />
               </div>
 
               {/* Level selector */}
@@ -214,8 +250,25 @@ export default function Home() {
               </div>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
-                  {error}
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm flex items-center justify-between gap-3">
+                  <span className="text-red-700 dark:text-red-400">{error}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={handleTranslate}
+                      className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+                    >
+                      Retry
+                    </button>
+                    <button
+                      onClick={() => setError(null)}
+                      className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300"
+                      aria-label="Dismiss error"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -231,10 +284,13 @@ export default function Home() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Analyzing...
+                      Analyzing{elapsed > 0 ? ` (${elapsed}s)` : '...'}
                     </>
                   ) : (
-                    'Translate'
+                    <>
+                      Translate
+                      <kbd className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-terracotta-600 rounded">Ctrl+Enter</kbd>
+                    </>
                   )}
                 </button>
               </div>
@@ -272,9 +328,9 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div key="results" className="space-y-4 view-enter">
             {/* Level selector bar on results page */}
-            <div className="bg-white dark:bg-warm-800 rounded-xl border border-cream-300 dark:border-warm-700 p-4 shadow-soft flex items-center justify-between">
+            <div className="bg-white dark:bg-warm-800 rounded-xl border border-cream-300 dark:border-warm-700 p-4 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <LevelSelector level={level} onChange={handleRetranslate} disabled={loading} compact />
               {loading && (
                 <div className="flex items-center gap-2 text-sm text-warm-600 dark:text-warm-400">
@@ -282,14 +338,23 @@ export default function Home() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Re-translating...
+                  Re-translating{elapsed > 0 ? ` (${elapsed}s)` : '...'}
                 </div>
               )}
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
-                {error}
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm flex items-center justify-between gap-3">
+                <span className="text-red-700 dark:text-red-400">{error}</span>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300 flex-shrink-0"
+                  aria-label="Dismiss error"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             )}
 

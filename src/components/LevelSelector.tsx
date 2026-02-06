@@ -20,7 +20,7 @@ const LEVEL_LABELS: Record<ComplexityLevel, { short: string; percent: string; de
 export default function LevelSelector({ level, onChange, disabled, compact }: LevelSelectorProps) {
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="group" aria-label="Detail level">
         <span className="text-xs text-warm-600">Detail:</span>
         <div className="flex gap-0.5">
           {([1, 2, 3, 4, 5] as ComplexityLevel[]).map((l) => (
@@ -29,6 +29,8 @@ export default function LevelSelector({ level, onChange, disabled, compact }: Le
               onClick={() => onChange(l)}
               disabled={disabled}
               title={LEVEL_LABELS[l].desc}
+              aria-label={`Level ${l}: ${LEVEL_LABELS[l].short}`}
+              aria-pressed={level === l}
               className={`w-7 h-7 rounded-md text-xs font-medium transition-all ${
                 level === l
                   ? 'bg-terracotta-500 text-white'
@@ -45,7 +47,7 @@ export default function LevelSelector({ level, onChange, disabled, compact }: Le
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" role="group" aria-label="Detail level">
       <div className="flex justify-between items-center mb-2">
         <label className="text-sm font-medium text-warm-800 dark:text-warm-200">Detail level</label>
         <span className="text-xs text-warm-600 dark:text-warm-400">{LEVEL_LABELS[level].desc}</span>
@@ -56,6 +58,8 @@ export default function LevelSelector({ level, onChange, disabled, compact }: Le
             key={l}
             onClick={() => onChange(l)}
             disabled={disabled}
+            aria-label={`Level ${l}: ${LEVEL_LABELS[l].short} - ${LEVEL_LABELS[l].desc}`}
+            aria-pressed={level === l}
             className={`flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all ${
               level === l
                 ? 'bg-terracotta-500 text-white shadow-soft'
