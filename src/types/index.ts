@@ -44,6 +44,14 @@ export interface TranslateResponse {
   hallucinations: HallucinationFlag[];
 }
 
+export interface HistoryEntry {
+  id: string;
+  timestamp: number;
+  inputText: string;
+  level: ComplexityLevel;
+  result: TranslateResponse;
+}
+
 export interface ClaudeAnalysis {
   translated: string;
   coreClaim: string;

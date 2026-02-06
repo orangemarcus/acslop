@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import TextInput from '@/components/TextInput';
 import ImageUpload from '@/components/ImageUpload';
 import LevelSelector from '@/components/LevelSelector';
 import ResultsPanel from '@/components/ResultsPanel';
-import { TranslateResponse, ComplexityLevel } from '@/types';
+import HistoryDrawer from '@/components/HistoryDrawer';
+import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
+import { getHistory, addHistoryEntry } from '@/lib/history';
 
 type View = 'input' | 'results';
+
+const INPUT_STORAGE_KEY = 'acslop_draft';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -21,6 +25,40 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  // Load history on mount
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
+
+  const refreshHistory = useCallback(() => {
+    setHistory(getHistory());
+  }, []);
+
+  // Restore draft input from localStorage on mount
+  useEffect(() => {
+    try {
+      const draft = localStorage.getItem(INPUT_STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        if (parsed.text) setText(parsed.text);
+        if (parsed.level) setLevel(parsed.level);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persist draft input to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(INPUT_STORAGE_KEY, JSON.stringify({ text, level }));
+    } catch {
+      // ignore
+    }
+  }, [text, level]);
 
   // Initialize dark mode from system preference or localStorage
   useEffect(() => {
@@ -99,6 +137,11 @@ export default function Home() {
       const data: TranslateResponse = await response.json();
       setResult(data);
       setView('results');
+
+      // Save to history
+      const inputText = text || data.original;
+      addHistoryEntry(inputText, level, data);
+      refreshHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -138,11 +181,25 @@ export default function Home() {
 
       const data: TranslateResponse = await response.json();
       setResult(data);
+
+      // Save re-translation to history too
+      const inputText = text || data.original;
+      addHistoryEntry(inputText, newLevel, data);
+      refreshHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHistorySelect = (entry: HistoryEntry) => {
+    setText(entry.inputText);
+    setLevel(entry.level);
+    setResult(entry.result);
+    setImage(null);
+    setError(null);
+    setView('results');
   };
 
   return (
@@ -165,7 +222,7 @@ export default function Home() {
 
             {/* Navigation Tabs */}
             {result && (
-              <div className="flex items-center gap-1 bg-cream-200 dark:bg-warm-700 rounded-lg p-1">
+              <div className="hidden sm:flex items-center gap-1 bg-cream-200 dark:bg-warm-700 rounded-lg p-1">
                 <button
                   onClick={() => setView('input')}
                   aria-pressed={view === 'input'}
@@ -191,7 +248,24 @@ export default function Home() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* History button */}
+              <button
+                onClick={() => setHistoryOpen(true)}
+                className="p-2 rounded-lg text-warm-600 dark:text-warm-400 hover:bg-cream-200 dark:hover:bg-warm-700 relative"
+                aria-label="Translation history"
+                title="Translation history"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {history.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-terracotta-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {history.length > 9 ? '9+' : history.length}
+                  </span>
+                )}
+              </button>
+
               {/* Dark mode toggle */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
@@ -362,6 +436,15 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* History Drawer */}
+      <HistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entries={history}
+        onSelect={handleHistorySelect}
+        onHistoryChange={refreshHistory}
+      />
     </div>
   );
 }
