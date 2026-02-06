@@ -1,22 +1,35 @@
 import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { streamTranslateText, streamTranslateImage } from '@/lib/claude';
 import { calculateSlopIndex } from '@/lib/slopCalculator';
+import { checkQuota, logUsage } from '@/lib/quota';
 import { TranslateResponse, PhraseMapping, HallucinationFlag, ComplexityLevel } from '@/types';
 
-const MAX_REQUESTS_PER_MINUTE = 10;
 const MAX_TEXT_LENGTH = 5000;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const requestLog: number[] = [];
 
-function isRateLimited(): boolean {
+// In-memory burst protection (per-process, supplements DB quota)
+const burstLog: number[] = [];
+const MAX_BURST_PER_MINUTE = 15;
+
+function isBurstLimited(): boolean {
   const now = Date.now();
   const oneMinuteAgo = now - 60_000;
-  while (requestLog.length > 0 && requestLog[0] < oneMinuteAgo) {
-    requestLog.shift();
+  while (burstLog.length > 0 && burstLog[0] < oneMinuteAgo) {
+    burstLog.shift();
   }
-  if (requestLog.length >= MAX_REQUESTS_PER_MINUTE) return true;
-  requestLog.push(now);
+  if (burstLog.length >= MAX_BURST_PER_MINUTE) return true;
+  burstLog.push(now);
   return false;
+}
+
+function getIpAddress(request: NextRequest): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
 }
 
 const VALID_HALLUCINATION_TYPES = new Set([
@@ -25,9 +38,27 @@ const VALID_HALLUCINATION_TYPES = new Set([
 const VALID_SEVERITIES = new Set(['high', 'medium', 'low']);
 
 export async function POST(request: NextRequest) {
-  if (isRateLimited()) {
+  // Burst protection
+  if (isBurstLimited()) {
     return new Response(
-      `event: error\ndata: ${JSON.stringify({ error: `Rate limited. Max ${MAX_REQUESTS_PER_MINUTE} requests per minute.` })}\n\n`,
+      `event: error\ndata: ${JSON.stringify({ error: 'Too many requests. Please wait a moment.' })}\n\n`,
+      { status: 429, headers: { 'Content-Type': 'text/event-stream' } }
+    );
+  }
+
+  // Resolve user identity
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string })?.id || null;
+  const ipAddress = getIpAddress(request);
+
+  // Check quota (DB-backed, per-user or per-IP)
+  const quota = await checkQuota(userId, ipAddress);
+  if (!quota.allowed) {
+    const msg = userId
+      ? `Monthly limit reached (${quota.limit} translations). Resets in ${quota.resetsIn}.`
+      : `Daily limit reached (${quota.limit} translations). Sign in for 25/month, or wait ${quota.resetsIn}.`;
+    return new Response(
+      `event: error\ndata: ${JSON.stringify({ error: msg, quota: true })}\n\n`,
       { status: 429, headers: { 'Content-Type': 'text/event-stream' } }
     );
   }
@@ -72,6 +103,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const startTime = Date.now();
   const encoder = new TextEncoder();
   const abortController = new AbortController();
 
@@ -86,6 +118,8 @@ export async function POST(request: NextRequest) {
       };
 
       try {
+        // Send quota info so client can display it
+        send('quota', { used: quota.used + 1, limit: quota.limit, resetsIn: quota.resetsIn });
         send('status', { message: 'Connecting to Claude...' });
 
         let originalText: string;
@@ -94,11 +128,9 @@ export async function POST(request: NextRequest) {
 
         const onDelta = (chunk: string) => {
           chunkCount++;
-          // Send delta events (throttled to every 3rd chunk to reduce overhead)
           if (chunkCount % 3 === 0 || chunk.includes('"translated"')) {
             send('delta', { text: chunk });
           }
-          // Send status updates at milestones
           if (chunkCount === 1) {
             send('status', { message: 'Translating...' });
           } else if (chunkCount === 30) {
@@ -124,6 +156,14 @@ export async function POST(request: NextRequest) {
 
         if (!originalText) {
           send('error', { error: 'Could not extract text from the image.' });
+
+          await logUsage({
+            userId, ipAddress, endpoint: '/api/translate/stream',
+            inputChars: text.length, hasImage: !!image, level,
+            durationMs: Date.now() - startTime, success: false,
+            error: 'Empty image extraction',
+          });
+
           controller.close();
           return;
         }
@@ -169,7 +209,16 @@ export async function POST(request: NextRequest) {
         };
 
         send('done', response);
+
+        // Log successful usage
+        await logUsage({
+          userId, ipAddress, endpoint: '/api/translate/stream',
+          inputChars: originalText.length, hasImage: !!image, level,
+          durationMs: Date.now() - startTime, success: true,
+        });
       } catch (err) {
+        const durationMs = Date.now() - startTime;
+
         if (abortController.signal.aborted) {
           send('error', { error: 'Request cancelled' });
         } else {
@@ -177,6 +226,13 @@ export async function POST(request: NextRequest) {
           const message = err instanceof Error ? err.message : 'Translation failed';
           send('error', { error: message });
         }
+
+        // Log failed usage
+        await logUsage({
+          userId, ipAddress, endpoint: '/api/translate/stream',
+          inputChars: text.length, hasImage: !!image, level, durationMs,
+          success: false, error: err instanceof Error ? err.message : 'Unknown error',
+        }).catch(() => {}); // Don't fail the stream on logging errors
       } finally {
         controller.close();
       }

@@ -10,6 +10,8 @@ import StreamingPreview from '@/components/StreamingPreview';
 import ExampleBrowser from '@/components/ExampleBrowser';
 import OnboardingTour from '@/components/OnboardingTour';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
+import UserMenu from '@/components/UserMenu';
+import { useSession } from 'next-auth/react';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
 import { getHistory, addHistoryEntry } from '@/lib/history';
 
@@ -34,6 +36,7 @@ function parseSSE(chunk: string): Array<{ event: string; data: string }> {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const [text, setText] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [imageMediaType, setImageMediaType] = useState<string>('image/png');
@@ -50,6 +53,7 @@ export default function Home() {
   const [streamStatus, setStreamStatus] = useState<string>('');
   const abortRef = useRef<AbortController | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [quotaInfo, setQuotaInfo] = useState<{ used: number; limit: number; resetsIn: string } | null>(null);
 
   // '?' key to open keyboard shortcuts help
   useEffect(() => {
@@ -145,6 +149,20 @@ export default function Home() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [text, image, loading, view]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Save translation to cloud for authenticated users
+  const saveToCloud = useCallback(async (inputText: string, lvl: number, translationResult: TranslateResponse) => {
+    if (!session?.user) return;
+    try {
+      await fetch('/api/translations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputText, level: lvl, result: translationResult }),
+      });
+    } catch {
+      // Silent fail — local history is the fallback
+    }
+  }, [session]);
+
   const streamTranslation = async (
     requestBody: Record<string, unknown>,
     onComplete: (data: TranslateResponse) => void
@@ -197,6 +215,9 @@ export default function Home() {
             switch (evt.event) {
               case 'status':
                 setStreamStatus(data.message);
+                break;
+              case 'quota':
+                setQuotaInfo(data);
                 break;
               case 'done':
                 onComplete(data as TranslateResponse);
@@ -265,6 +286,7 @@ export default function Home() {
         const inputText = text || data.original;
         addHistoryEntry(inputText, level, data);
         refreshHistory();
+        saveToCloud(inputText, level, data);
       }
     );
   };
@@ -292,6 +314,7 @@ export default function Home() {
         const inputText = text || data.original;
         addHistoryEntry(inputText, newLevel, data);
         refreshHistory();
+        saveToCloud(inputText, newLevel, data);
       }
     );
   };
@@ -410,6 +433,9 @@ export default function Home() {
                   New
                 </button>
               )}
+
+              {/* User menu / Sign in */}
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -462,6 +488,18 @@ export default function Home() {
                       </svg>
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Quota indicator */}
+              {quotaInfo && (
+                <div className="mb-3 text-center">
+                  <span className="text-[11px] text-warm-500 dark:text-warm-400">
+                    {quotaInfo.used} / {quotaInfo.limit} translations used
+                    {!session?.user && (
+                      <> &mdash; <button onClick={() => { window.location.href = '/auth/signin'; }} className="text-terracotta-500 hover:text-terracotta-600 font-medium">Sign in</button> for {'\u00A0'}25/month</>
+                    )}
+                  </span>
                 </div>
               )}
 
