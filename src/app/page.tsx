@@ -7,6 +7,7 @@ import LevelSelector from '@/components/LevelSelector';
 import ResultsPanel from '@/components/ResultsPanel';
 import HistoryDrawer from '@/components/HistoryDrawer';
 import StreamingPreview from '@/components/StreamingPreview';
+import ExampleBrowser from '@/components/ExampleBrowser';
 import { TranslateResponse, ComplexityLevel, HistoryEntry } from '@/types';
 import { getHistory, addHistoryEntry } from '@/lib/history';
 
@@ -446,35 +447,7 @@ export default function Home() {
             </div>
 
             {/* Examples */}
-            <div>
-              <h3 className="text-xs font-semibold text-warm-600 dark:text-warm-400 uppercase tracking-wider mb-3 px-1">Try an example</h3>
-              <div className="space-y-2.5">
-                {[
-                  {
-                    label: 'Sociology',
-                    text: "The dialectical interplay between structure and agency manifests in the habituated practices of social actors, whose dispositional tendencies are simultaneously constituted by and constitutive of the field-specific logics that govern symbolic capital accumulation.",
-                  },
-                  {
-                    label: 'Business',
-                    text: "Leveraging synergistic cross-functional alignments, we can operationalize a paradigm shift toward customer-centric value propositions that drive sustainable competitive advantage through iterative optimization of touchpoint experiences.",
-                  },
-                  {
-                    label: 'Philosophy',
-                    text: "The epistemological ramifications of post-structuralist deconstruction necessitate a fundamental reconceptualization of the ontological status of textual meaning, whereby the signifier-signified relationship is revealed as inherently unstable and contingent upon the differance that perpetually defers presence.",
-                  },
-                ].map((example) => (
-                  <button
-                    key={example.label}
-                    onClick={() => setText(example.text)}
-                    className="w-full text-left p-4 bg-white dark:bg-warm-800 hover:bg-cream-50 dark:hover:bg-warm-700 border border-cream-300 dark:border-warm-700 hover:border-cream-400 dark:hover:border-warm-600 rounded-xl text-sm text-warm-700 dark:text-warm-300 shadow-soft"
-                    disabled={loading}
-                  >
-                    <span className="text-xs font-semibold text-terracotta-500 uppercase tracking-wider">{example.label}</span>
-                    <p className="mt-1 text-warm-600 dark:text-warm-400 line-clamp-2">&ldquo;{example.text.slice(0, 120)}...&rdquo;</p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ExampleBrowser onSelect={setText} disabled={loading} />
           </div>
         ) : (
           <div key="results" className="space-y-4 view-enter">
