@@ -7,9 +7,11 @@ import { TranslateResponse } from '@/types';
 import { getSlopLabel, getSlopColor } from '@/lib/slopCalculator';
 import SlopGauge from '@/components/SlopGauge';
 import HallucinationPanel from '@/components/HallucinationPanel';
+import CommentSection from '@/components/CommentSection';
 
 interface SharedReport {
   shareId: string;
+  reportDbId: string;
   title: string | null;
   views: number;
   createdAt: string;
@@ -167,6 +169,9 @@ export default function SharedReportPage() {
           <SlopGauge slopIndex={result.slopIndex} />
           <HallucinationPanel hallucinations={result.hallucinations} />
         </div>
+
+        {/* Comments */}
+        <CommentSection reportId={report.reportDbId} />
 
         {/* CTA */}
         <div className="text-center py-6">

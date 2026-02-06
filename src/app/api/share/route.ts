@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     shareId: report.shareId,
+    reportDbId: report.id,
     title: report.title,
     views: report.views + 1,
     createdAt: report.createdAt,

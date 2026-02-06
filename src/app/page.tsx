@@ -614,6 +614,12 @@ export default function Home() {
           </p>
           <div className="flex items-center gap-4">
             <a
+              href="/feed"
+              className="hover:text-warm-700 dark:hover:text-warm-300"
+            >
+              Feed
+            </a>
+            <a
               href="/leaderboard"
               className="hover:text-warm-700 dark:hover:text-warm-300"
             >

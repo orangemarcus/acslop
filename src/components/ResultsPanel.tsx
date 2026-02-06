@@ -11,6 +11,7 @@ import CommunityComparison from './CommunityComparison';
 import FeedbackButtons from './FeedbackButtons';
 import BookmarkButton from './BookmarkButton';
 import FieldDetector from './FieldDetector';
+import CompareMode from './CompareMode';
 import { getSlopLabel } from '@/lib/slopCalculator';
 import ShareButton from './ShareButton';
 
@@ -343,9 +344,17 @@ export default function ResultsPanel({ result, translationId, inputText, level }
             <HallucinationPanel hallucinations={result.hallucinations} />
           </div>
 
-          {/* Full-width writing tips */}
-          <div className="lg:col-span-12">
+          {/* Full-width writing tips + compare mode */}
+          <div className="lg:col-span-12 space-y-6">
             <WritingTips breakdown={result.slopIndex.breakdown} score={result.slopIndex.score} />
+            {inputText && level && (
+              <CompareMode
+                originalText={inputText}
+                currentLevel={level}
+                currentTranslated={result.translated}
+                currentScore={result.slopIndex.score}
+              />
+            )}
           </div>
         </div>
       ) : (
@@ -387,6 +396,15 @@ export default function ResultsPanel({ result, translationId, inputText, level }
             <CommunityComparison score={result.slopIndex.score} />
             <WritingTips breakdown={result.slopIndex.breakdown} score={result.slopIndex.score} />
           </div>
+
+          {inputText && level && (
+            <CompareMode
+              originalText={inputText}
+              currentLevel={level}
+              currentTranslated={result.translated}
+              currentScore={result.slopIndex.score}
+            />
+          )}
         </div>
       )}
     </div>
